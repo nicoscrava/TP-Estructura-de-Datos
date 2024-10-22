@@ -1,0 +1,141 @@
+class Telefono:
+    red_telefonos={}
+    
+    def __init__(self, ID, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico) :
+        #falta agregar validadores
+        self.ID=ID 
+        self.nombre=nombre
+        self.modelo=modelo
+        self.sistema_operativo=sistema_operativo
+        self.version=version
+        self.RAM=RAM
+        self.almacenamiento=almacenamiento
+        self.num_telefonico=num_telefonico
+        self.encendido = False #indica si esta encendido o apagado
+        self.desbloqueado=False #indica si esta desbloqueado el telefono
+        self.red_movil=False #indica si esta en la red
+        self.datos_moviles= True #el telefono viene con datos moviles
+        
+    def __str__(self):
+        return f'Celular con:\n ID: {self.ID}\n Nombre: {self.nombre}\n Modelo: {self.modelo}\n Sistema Operativo: {self.sistema_operativo}\n Versión: {self.version}\n RAM: {self.RAM}\n Almacenamiento: {self.almacenamiento}\n Número de teléfono: {self.num_telefonico}'
+    
+    def enceder_apagar(self,cls):
+        self.encendido = not self.encendido
+        if self.encendido:
+            #una vez encendido, se agrega el telefono a la red
+            self.red_movil=True
+            cls.red_telefonos[self.num_telefonico]=self #su key va a ser el numero telefonico
+            print("El celular se ha prendido")
+        else:
+            #una vez apagado, se elimina de la red
+            self.red_movil=False
+            cls.red_telefonos.pop(self.num_telefonico)
+            print("Has apagado el celular")
+        
+    def bloq_desbloq(self):
+        self.desbloqueado= not self.desbloqueado
+        #
+        if self.desbloqueado:
+            print("El celular se ha desbloqueado")
+        else:
+            print("Has bloqueado el celular")
+
+class Aplicacion(Telefono):
+    def __init__(self, ID, almacenamiento, numero): #NO SE BIEN CUALES HABRÍA QUE HEREDAR, PUEDE SER DISTINTO
+        super().__init__(ID, almacenamiento = almacenamiento, num_telefonico = numero)
+    #NO SE SI VA ALGUN ATRIBUTO MÁS, TAMPOCO SE SI VA CON STR
+
+
+
+class AppTelefono(Aplicacion):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        pass    
+    
+    def llamar(self):
+        pass
+    
+    def atender(self):
+        pass
+
+    def cortar(self):
+        pass
+    
+class Contactos(Aplicacion):
+    def __init__(self):
+        pass    
+    
+    def __str__(self):
+        pass  
+    
+    def agendar_contacto(self):
+        pass   
+
+    def editar_contacto(self):
+        pass       
+
+class SMS(Aplicacion):
+    def __init__(self):
+        pass      
+
+    def __str__(self):
+        pass  
+
+    def enviar_sms(self):
+        pass      
+
+    def leer_sms(self):
+        pass    
+
+    def eliminar_sms(self):
+        pass    
+
+class Mail(Aplicacion):
+    def __init__(self):
+        pass     
+
+    def __str__(self):
+        pass  
+
+    def ver_mails(self):   #POR FECHA Y POR NO LEIDOS
+        pass        
+    
+class AppStore(Aplicacion):
+    def __init__(self):
+        pass     
+
+    def __str__(self):
+        pass  
+
+    def descargar(self):  
+        pass       
+
+class Configuracion(Aplicacion):
+    def __init__(self):
+        pass     
+
+    def __str__(self):
+        pass  
+
+  """def app_telefono(self):
+        pass
+    
+    def app_contactos(self):
+        pass
+    
+    def app_mensajes(self):
+        pass
+    
+    def app_mail(self):
+        pass
+    
+    def app_store(self):
+        pass
+    
+    # hay que agregar la funcionalidad de desactivar la red movil 
+    def app_configuracion(self):
+        pass
+    """
+
