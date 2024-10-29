@@ -1,6 +1,12 @@
+from clase_central import Central
+
 class Celular:
     
+    central = Central()
+
     def __init__(self, identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico) :
+        
+        #atributos bases
         #falta agregar validadores
         self.identificacion=identificacion 
         self.nombre=nombre
@@ -10,13 +16,22 @@ class Celular:
         self.RAM=RAM
         self.almacenamiento=almacenamiento
         self.num_telefonico=num_telefonico
+
+        #atributos adicionales
         self.encendido = False #indica si esta encendido o apagado
         self.desbloqueado=False #indica si esta desbloqueado el celular
         self.codigo=None
+        self.en_red = False
+        self.red_movil=False
+
+        # simil modo no molestar
+        self.disponible = True
         
+        #primero se inicializa la app de contactos
         contactos = Contactos()
         
         #creamos un diccionario para reflejar cada aplicacion y poder identificarla por su nombre
+        #la app contactos ya fue creada para poder ser pasada como argumento
         self.apps={"contactos": contactos,
                    "sms": SMS(contactos), 
                    "email": Email(),
@@ -24,23 +39,23 @@ class Celular:
                    'app store': App_Store(self), #accede al celular para modificar las apps dentro
                     'configuracion': Configuracion(self) #accede a toda la configuracion del celular
                    }
-        
-    def enceder_apagar(self,cls):
+
+    @classmethod    
+    def enceder_apagar(self, cls):
         self.encendido = not self.encendido
         if self.encendido:
-            #una vez encendido, se agrega el celular a la red
-            self.red_movil=True
-            #ACA deberia CONECTAR CON LA CENTRAL
+
             print("El celular se ha prendido")
         else:
-            #una vez apagado, se elimina de la red
-            self.red_movil=False
-            #ACA deberia CONECTAR CON LA CENTRAL
+            #ACA deberia DESCONECTAR CON LA CENTRAL
+            cls.central.baja_dispositivo(self)
+            self.red_movil = False
+            self.desbloqueado = False
             print("Has apagado el celular")
-        
+
+    #agregar contrasenia    
     def bloq_desbloq(self):
         self.desbloqueado= not self.desbloqueado
-        #
         if self.desbloqueado:
             print("El celular se ha desbloqueado")
         else:
@@ -49,7 +64,7 @@ class Celular:
         
     def abrir_app(self):
         aplicacion=input(f"Que aplicacicion desea abrir: {self.apps.keys}")
-        self.apps[aplicacion].abrir()
+        self.apps[aplicacion].menu()
         
     
         
@@ -57,6 +72,7 @@ class Aplicacion():
     def __init__ (self):
         pass
     
+
         
 class Contactos(Aplicacion):
     def __init__(self):
@@ -67,14 +83,11 @@ class Contactos(Aplicacion):
         self.lista_de_contactos[celular.nombre]=celular
         
 
-
 class SMS(Aplicacion):
     def __init__(self,contactos):
         self.bandeja_sms=[] #pila para ver cual llega primero 
         self.contactos=contactos
         pass
-    
-   
         
     def enviar_mensaje(self,receptor: str):
         pass 
@@ -83,10 +96,7 @@ class SMS(Aplicacion):
         pass 
     
     def eliminar_mensajes(self):
-        pass
-    
-        
-    
+        pass   
     
 class Telefono(Aplicacion):
     def __init__(self,contactos):
@@ -126,7 +136,7 @@ class App_Store(Aplicacion):
     
 
 class Configuracion(Aplicacion):
-    def __init__(self,celular):
+    def __init__(self, celular: Celular):
         self.celular=celular
 
     def cambiar_nombre(self,nuevo_nombre: str):
@@ -135,12 +145,20 @@ class Configuracion(Aplicacion):
     def cambiar_codigo(self,nuevo_codigo: int):
         if self.celular.codigo == None or self.celular.codigo == int(input('ingrese el codigo actual: ')): #chequear
             self.celular.codigo=nuevo_codigo
-            
+        
     def activar_red_movil(self):
-        pass 
+        #desactiva la red movil y manda la actualizacion a la central
+        self.celular.central.alta_dispositivo(self)
+        self.celular.red_movil = False
     
     def desactivar_red_movil(self):
-        pass
-    
+        self.celular.central.baja_dispositivo(self)
+        self.celular.red_movil = False
+        
+    def toggle_disponibilidad(self):
+        self.celular.disponible = not self.celular.disponible
+
+    #datos moviles: wifi para el mail
     def datos(self):
         pass
+

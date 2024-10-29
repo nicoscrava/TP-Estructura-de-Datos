@@ -6,6 +6,7 @@ Explicaciones:
     - Lo mismo para los contactos dentro de la app Contactos donde el key es el nombre y el value es el objeto
     - Explicar que agendar y actualizar un contacto usan el mismo metodo por como funcionan los diccionarios
     - Explicar que la bandeja de entrada de sms es una pila
+    - La validacion del celular emisor se hace al intentar comunicar con la central desde el mismo celular.
 
 
 A revisar:
