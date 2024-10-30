@@ -17,6 +17,7 @@ A revisar:
 - Preguntar si esta bien usar dos listas separadas para los mails: leidos y no leidos 
 - Hacer clase de central de mails
 - Preguntar si esta mal el metodo validar_emisor que sea de la clase Aplicacion y que lo hereden todas como por ejemplo Contacto. 
+- Preguntar si se puede estar en llamada y hacer otras cosas al mismo tiempo
 
 
 Chiche para agregar: 

@@ -1,5 +1,15 @@
 from main import Celular
 
+class Comunicacion:
+    def __init__(self, tipo: str, emisor: Celular, receptor: Celular, contenido=None):
+        self.tipo = tipo
+        self.emisor = emisor
+        self.receptor = receptor
+        self.contenido = contenido
+        if self.tipo == 'llamada':
+            self.llamada_aceptada=False
+            self.llamada_en_transcurso = False
+
 class Central:
 
     def __init__(self):
@@ -53,8 +63,13 @@ class Central:
             comunicacion = Comunicacion('llamada', emisor, receptor)
 
             # Si se acepta la llamada, se le cambia el atributo llamada_aceptada de la comunicacion
-            if celular_receptor.apps['telefono'].recibir_llamada(emisor.num_telefonico):
+            if celular_receptor.apps['telefono'].recibir_llamada(comunicacion):
                 comunicacion.llamada_aceptada = True
+                print(f'Estas en llamada con {receptor}')
+                emisor.disponible = False
+                emisor.llamada_actual = comunicacion
+                comunicacion.llamada_en_transcurso = True
+
 
             # Si rechaza la llamada el atributo llamada_aceptada queda como False
             else:
@@ -62,12 +77,11 @@ class Central:
 
             # Se agrega la comunicacion al registro
             self.registro_comunicaciones.append(comunicacion)
+
+    def terminar_comunicacion_telefonica(self, comunicacion: Comunicacion):
+        comunicacion.llamada_en_transcurso = False
+        comunicacion.emisor.disponible = True
+        comunicacion.receptor.disponible = True
+        comunicacion.emisor.llamada_actual = None
+        comunicacion.receptor.llamada_actual = None
         
-class Comunicacion:
-    def __init__(self, tipo: str, emisor: Celular, receptor: Celular, contenido=None):
-        self.tipo = tipo
-        self.emisor = emisor
-        self.receptor = receptor
-        self.contenido = contenido
-        if self.tipo == 'llamada':
-            self.llamada_aceptada=False
