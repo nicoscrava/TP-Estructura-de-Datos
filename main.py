@@ -118,11 +118,10 @@ class SMS(Aplicacion):
         if receptor in self.celular.apps['contactos'].lista_de_contactos:
             receptor = self.celular.apps['contactos'].lista_de_contactos[receptor]
         
-        # Valida el estado desde el propio celular emisor
-        if self.celular.validar_estado_emisor():
-            self.celular.central.comunicacion_sms(self, receptor, mensaje)
+        # Valida el estado desde la central
+        self.celular.central.comunicacion_sms(self, receptor, mensaje)
         
-    def recibir_mensaje(self, emisor: str, mensaje: str):
+    def recibir_mensaje(self, mensaje: Comunicacion):
         #agregar mensaje a pila
         pass
 
@@ -209,12 +208,15 @@ class Configuracion(Aplicacion):
         
     def activar_red_movil(self):
         #desactiva la red movil y manda la actualizacion a la central
-        self.celular.central.alta_dispositivo(self)
-        self.celular.red_movil = False
+        if self.celular.num_telefonico in self.celular.central.dispositivos_registrados:
+            self.celular.red_movil = True
+        else:
+            print('Tu celular no esta registrado en la central. No podes activar datos')
     
     def desactivar_red_movil(self):
-        self.celular.central.baja_dispositivo(self)
+        self.celular.apps['telefono'].terminar_llamada()
         self.celular.red_movil = False
+        
         
     def toggle_disponibilidad(self):
         self.celular.disponible = not self.celular.disponible

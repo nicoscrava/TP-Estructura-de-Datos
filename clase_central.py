@@ -21,38 +21,45 @@ class Central:
 
     def baja_dispositivo(self, celular: Celular):
         try:
+            celular.red_movil = False
             del self.dispositivos_registrados[celular.num_telefonico]
         except KeyError:
             print(f'El telefono con numero {celular.num_telefonico} no se encuentra en la red.')
     
-    def validar_estado_receptor(self, receptor: Celular, es_llamada=False):
+    def validar_estado_celular(self, celular: Celular, es_emisor, es_llamada=False):
 
         # la validacion para la emision del mensaje se realiza desde el ceular emisor mismo
         
-        # Si el dispositivo receptor no esta registrado en la red se avisa que esta fuera de servicio y devuelve False
-        if not (receptor.num_telefonico in self.dispositivos_registrados):
-            print(f'El numero {receptor.num_telefonico} esta fuera de servicio.')
+        # Si el dispositivo celular no esta registrado en la red se avisa que esta fuera de servicio y devuelve False
+        if celular.red_movil:
+            if es_emisor:
+                print('Tu celular esta fuera de servicio') 
+            else:
+                print(f'El numero {celular.num_telefonico} esta fuera de servicio.')
             return False
         
-        # Si se trata de una llamada y no esta disponible el receptor se avisa y devuelve False
-        elif es_llamada and receptor.disponible == False:
-            print(f'El numero {receptor.num_telefonico} no se encuentra disponible.')
+        # Si se trata de una llamada y no esta disponible el celular se avisa y devuelve False
+        if es_llamada and celular.disponible == False:
+            print(f'El numero {celular.num_telefonico} no se encuentra disponible.')
             return False
         
         # Devuelve True si se puede realizar la comunicacion
         else:
             return True
 
-    def comunicacion_sms(self, emisor: Celular, receptor: str, mensaje: str):
+    def comunicacion_sms(self, celular_emisor: Celular, receptor: str, mensaje: str):
 
         # Se halla en el diccionario de la red el celular receptor en base a su num telefonico
         celular_receptor = self.dispositivos_registrados[receptor]
         
-        # Si el receptor se puede comunicar, el receptor recibe el mensaje y se crea el registro
-        if self.validar_estado_receptor(celular_receptor):
-            celular_receptor.recibir_mensaje(emisor.num_telefonico, mensaje)
-            self.registro_comunicaciones.append(Comunicacion('sms', emisor, receptor, mensaje))
-
+        # Si el emisor no esta en la central, no se envia el mensaje
+        if self.validar_estado_celular(celular_emisor, True):
+            # Si el receptor se puede comunicar, el receptor recibe el mensaje y se crea el registro
+            if self.validar_estado_celular(celular_receptor, False):
+                comunicacion = Comunicacion('sms', celular_emisor, receptor, mensaje)
+                celular_receptor.recibir_mensaje(comunicacion)
+                self.registro_comunicaciones.append(comunicacion)
+                
     def comunicacion_telefonica(self, emisor: Celular, receptor: str):
 
         # Se halla en el diccionario de la red el celular receptor en base a su num telefonico

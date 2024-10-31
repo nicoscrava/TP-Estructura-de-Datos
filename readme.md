@@ -12,8 +12,6 @@ a ese celular
 
 A revisar:
 - Revisar si el sistema de cambio de codigo funciona asi o si es con 'while' 
-- Preguntar si la clase apps deberia tener atributos 
-- Preguntar si esta bien que la app de config y store tengan acceso al objeto celular 
 - Preguntar si esta bien usar dos listas separadas para los mails: leidos y no leidos 
 - Hacer clase de central de mails
 - Preguntar si esta mal el metodo validar_emisor que sea de la clase Aplicacion y que lo hereden todas como por ejemplo Contacto. 
