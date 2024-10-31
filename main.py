@@ -1,4 +1,6 @@
 from clase_central import Central, Comunicacion
+from collections import deque
+from listaenlazada import *
 
 
 class Celular:
@@ -47,11 +49,11 @@ class Celular:
 
         self.encendido = not self.encendido
         if self.encendido:
+            self.apps['configuracion'].activar_red_movil()
             print("El celular se ha prendido")
 
         else:
             #ACA deberia DESCONECTAR CON LA CENTRAL
-            self.central.baja_dispositivo(self)
             self.red_movil = False
             self.desbloqueado = False
             if self.llamada_actual != None:
@@ -98,18 +100,18 @@ class Contactos(Aplicacion):
         super().__init__(celular)
         self.lista_de_contactos={}
     
-    def agendar(self, celular: Celular):
+    def agendar(self, numero: str, nombre: str):
         #tanto para modificar como para agregar contactos, se usa el mismo key por ende es la misma funcionalidad que reemplaza el value
-        self.lista_de_contactos[celular.nombre]=celular
+        self.lista_de_contactos[numero]=nombre
         
 
 class SMS(Aplicacion):
     def __init__(self, celular: Celular, contactos: Contactos):
         super().__init__(celular)
-        self.bandeja_sms=[] #pila para ver cual llega primero 
+        self.bandeja_sms= ListaEnlazada() #lista enlazada 
         self.contactos=contactos
+        self.mensajes_en_espera = deque() # Mensajes que te llegaron cuando no tenias la red movil activa
         
-        pass
         
     def enviar_mensaje(self, receptor: str, mensaje: str):
 
@@ -119,14 +121,19 @@ class SMS(Aplicacion):
             receptor = self.celular.apps['contactos'].lista_de_contactos[receptor]
         
         # Valida el estado desde la central
-        self.celular.central.comunicacion_sms(self, receptor, mensaje)
+        self.celular.central.comunicacion_sms(self.celular, receptor, mensaje)
         
     def recibir_mensaje(self, mensaje: Comunicacion):
-        #agregar mensaje a pila
-        pass
+        self.bandeja_sms.agregarInicio(Nodo(mensaje))
+        
+
+    def actualizar_bandeja(self):
+        print(f'Tenes {len(self.mensajes_en_espera)} mensajes nuevos. ')
+        while self.mensajes_en_espera:
+            self.bandeja_sms.agregarInicio(Nodo(self.mensajes_en_espera.popleft()))
 
     def ver_bandeja_sms(self):
-        pass 
+        print(self.bandeja_sms)
     
     def eliminar_mensajes(self):
         pass
@@ -135,7 +142,7 @@ class SMS(Aplicacion):
 class Telefono(Aplicacion):
     def __init__(self, celular: Celular, contactos):
         super().__init__(celular)
-        self.historial_llamadas=[] #Cola para ver cual llega primero 
+        self.historial_llamadas=deque() #Pila para ver cual llega primero 
         self.en_llamada=False #se activa si estas en llamada, no podes estar en dos llamadas al mismo tiempo
         self.contactos=contactos
     
@@ -151,6 +158,7 @@ class Telefono(Aplicacion):
     def recibir_llamada(self, comunicacion: Comunicacion):
 
         # Si el celular no esta en llamada se le pide aceptar o rechazar la llamada
+        
         if self.celular.disponible:
             eleccion = input(f'El numero {comunicacion.emisor.num_telefonico} te esta llamando. Desea aceptar la llamada? (si/no)')
             if eleccion == 'si':
@@ -166,6 +174,7 @@ class Telefono(Aplicacion):
     def terminar_llamada(self):
         if self.disponible == False:
             self.celular.central.terminar_comunicacion_telefonica(self.celular.llamada_actual)
+
             print('Llamada finalizada. ')
 
     
@@ -210,6 +219,7 @@ class Configuracion(Aplicacion):
         #desactiva la red movil y manda la actualizacion a la central
         if self.celular.num_telefonico in self.celular.central.dispositivos_registrados:
             self.celular.red_movil = True
+            self.celular.apps['sms'].actualizar_bandeja()
         else:
             print('Tu celular no esta registrado en la central. No podes activar datos')
     

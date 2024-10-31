@@ -4,11 +4,13 @@ para guardar las aplicaciones donde el key es el nombre de la app y el value es 
 a ese celular
 - Lo mismo para los contactos dentro de la app Contactos donde el key es el nombre y el value es el objeto
 - Explicar que agendar y actualizar un contacto usan el mismo metodo por como funcionan los diccionarios
-- Explicar que la bandeja de entrada de sms es una pila
+- Explicar que el historial de llamadas es una pila
+- Explicar que los mensajes que no te llegan con el celular apagado se guardan en cola
 - La validacion del celular emisor se hace al intentar comunicar con la central desde el mismo celular.
 - celular.red_movil indica si un celular tiene datos moviles, puede o no estar en la red. 
 - celular (self) ya entra en la red una vez que tiene datos moviles pero la central puede dar de baja, asi como darlo de alta denuevo
 - el celular.disponible indica si esta en llamada
+
 
 A revisar:
 - Revisar si el sistema de cambio de codigo funciona asi o si es con 'while' 
