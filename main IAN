@@ -1,4 +1,7 @@
 from clase_central import Central, Comunicacion
+from collections import deque
+from listaenlazada import *
+
 
 class Celular:
     
@@ -8,51 +11,64 @@ class Celular:
         
         #atributos bases
         #falta agregar validadores
-        self.identificacion=identificacion 
+        if identificacion<=0:
+            raise ValueError (f'Identificador no válido ')
+        self.identificacion=identificacion
         self.nombre=nombre
         self.modelo=modelo
         self.sistema_operativo=sistema_operativo
         self.version=version
+        if RAM <= 0:
+            raise ValueError(f'RAM no válido')
         self.RAM=RAM
+        if almacenamiento <= 0:
+            raise ValueError(f'Almacenamiento no válido')
         self.almacenamiento=almacenamiento
+        if num_telefonico < 1100000000 or num_telefonico > 1199999999:
+            raise ValueError (f'Número de teléfono no válido')
+        if num_telefonico in Central.dispositivos_registrados:
+            raise KeyError (f'El número de teléfono ya existe')
         self.num_telefonico=num_telefonico
 
         #atributos adicionales
         self.encendido = False #indica si esta encendido o apagado
         self.desbloqueado=False #indica si esta desbloqueado el celular
         self.codigo=None
-        #self.en_red = False
         self.red_movil=False
 
         # Se encuentra disponible para la llamada
         self.disponible = True
+
+        # Contiene el numero con el cual se esta en llamada
+        self.llamada_actual = None
         
         #primero se inicializa la app de contactos
-        contactos = Contactos()
+        contactos = Contactos(self)
         
         #creamos un diccionario para reflejar cada aplicacion y poder identificarla por su nombre
         #la app contactos ya fue creada para poder ser pasada como argumento
         self.apps={"contactos": contactos,
-                   "sms": SMS(contactos, self), 
-                   "email": Email(),
-                   "telefono": Telefono(contactos, self),
+                   "sms": SMS(self, contactos), 
+                   "email": Email(self),
+                   "telefono": Telefono(self, contactos),
                    'app store': App_Store(self), #accede al celular para modificar las apps dentro
                     'configuracion': Configuracion(self) #accede a toda la configuracion del celular
                    }
-
-    @classmethod    
-    def enceder_apagar(self, cls):
+    
+    def encender_apagar(self):
 
         self.encendido = not self.encendido
         if self.encendido:
+            self.apps['configuracion'].activar_red_movil()
             print("El celular se ha prendido")
 
         else:
             #ACA deberia DESCONECTAR CON LA CENTRAL
-            cls.central.baja_dispositivo(self)
             self.red_movil = False
             self.desbloqueado = False
-            self.apps['telefono'].terminar_llamada() # Se termina la llamada en curso en el caso de existir
+            if self.llamada_actual != None:
+                
+                self.apps['telefono'].terminar_llamada() # Se termina la llamada en curso en el caso de existir
             print("Has apagado el celular")
 
     #agregar contrasenia    
@@ -62,13 +78,13 @@ class Celular:
             print("El celular se ha desbloqueado")
         else:
             print("Has bloqueado el celular")
-            
-        
+               
     def abrir_app(self):
-        aplicacion=input(f"Que aplicacicion desea abrir: {self.apps.keys}")
+        aplicacion=input(f"Que aplicacicion desea abrir: {self.apps.keys()}")
         self.apps[aplicacion].menu()
 
     def validar_estado_emisor(self):
+
         if self.red_movil == False:
             print('Tu celular no puede enviar mensajes. Activa la red movil.')
             return False
@@ -83,65 +99,81 @@ class Celular:
 
 
 class Aplicacion():
-    def __init__ (self, identificacion, almacenamiento, nombre_app):
-        super().__init__(identificacion, almacenamiento)
-        self.nombre_app = nombre_app
+
+    def __init__ (self, celular: Celular):
+        self.celular = celular
 
 
 class Contactos(Aplicacion):
-    def __init__(self):
+
+    def __init__(self, celular: Celular):
+        super().__init__(celular)
         self.lista_de_contactos={}
     
-    def agendar(self,celular: Celular):
+    def agendar(self, numero: str, nombre: str):
         #tanto para modificar como para agregar contactos, se usa el mismo key por ende es la misma funcionalidad que reemplaza el value
-        self.lista_de_contactos[celular.nombre]=celular
+        self.lista_de_contactos[numero]=nombre
         
 
 class SMS(Aplicacion):
-    def __init__(self, contactos: Contactos, celular: Celular):
-        self.bandeja_sms=[] #pila para ver cual llega primero 
+    def __init__(self, celular: Celular, contactos: Contactos):
+        super().__init__(celular)
+        self.bandeja_sms= ListaEnlazada() #lista enlazada 
         self.contactos=contactos
-        self.celular = celular
+        self.mensajes_en_espera = deque() # Mensajes que te llegaron cuando no tenias la red movil activa
         
         
     def enviar_mensaje(self, receptor: str, mensaje: str):
-        # Valida el estado desde el propio celular emisor
-        if self.celular.validar_estado_emisor():
-            self.celular.central.comunicacion_sms(self, receptor, mensaje)
+
+        # Si el argumento esta en el diccionario de contactos, se extrae el numero.
+        # En otro caso, se le puede pasar como argumento el numero telefonico directamente
+        if receptor in self.celular.apps['contactos'].lista_de_contactos:
+            receptor = self.celular.apps['contactos'].lista_de_contactos[receptor]
         
-    def recibir_mensaje(self, emisor: str, mensaje: str):
-        #agregar mensaje a pila
-        pass
+        # Valida el estado desde la central
+        self.celular.central.comunicacion_sms(self.celular, receptor, mensaje)
+        
+    def recibir_mensaje(self, mensaje: Comunicacion):
+        self.bandeja_sms.agregarInicio(Nodo(mensaje))
+        
+
+    def actualizar_bandeja(self):
+        print(f'Tenes {len(self.mensajes_en_espera)} mensajes nuevos. ')
+        while self.mensajes_en_espera:
+            self.bandeja_sms.agregarInicio(Nodo(self.mensajes_en_espera.popleft()))
 
     def ver_bandeja_sms(self):
-        lista = list(filter(lambda x: x.tipo == "sms", self.celular.central.registro_comunicaciones))
-        print(lista)
-
+        print(self.bandeja_sms)
+    
     def eliminar_mensajes(self):
         pass
 
-    
-    
-
-
-    
+   
 class Telefono(Aplicacion):
-    def __init__(self, contactos, celular: Celular):
-        self.historial_llamadas=[] #Cola para ver cual llega primero 
+    def __init__(self, celular: Celular, contactos):
+        super().__init__(celular)
+        self.historial_llamadas=deque() #Pila para ver cual llega primero 
         self.en_llamada=False #se activa si estas en llamada, no podes estar en dos llamadas al mismo tiempo
         self.contactos=contactos
-        self.celular = celular
     
+    def llamar(self, receptor: str):
 
-    def llamar(self):
-        pass
+        # Si el argumento esta en el diccionario de contactos, se extrae el numero.
+        # En otro caso, se le puede pasar como argumento el numero telefonico directamente
+        if receptor in self.celular.apps['contactos'].lista_de_contactos:
+            receptor = self.celular.apps['contactos'].lista_de_contactos[receptor]
+
+        self.celular.central.comunicacion_telefonica(self, receptor)
     
-    def recibir_llamada(self, emisor: str):
+    def recibir_llamada(self, comunicacion: Comunicacion):
 
         # Si el celular no esta en llamada se le pide aceptar o rechazar la llamada
+        
         if self.celular.disponible:
-            eleccion = input(f'El numero {emisor} te esta llamando. Desea aceptar la llamada? (si/no)')
+            eleccion = input(f'El numero {comunicacion.emisor.num_telefonico} te esta llamando. Desea aceptar la llamada? (si/no)')
             if eleccion == 'si':
+                self.celular.disponible = False
+                self.celular.llamada_actual = comunicacion
                 return True
             else:
                 return False
@@ -149,29 +181,33 @@ class Telefono(Aplicacion):
         else:
             self.agregar_historial_llamadas(Comunicacion())
 
-
     def terminar_llamada(self):
-        self.celular.central.terminar_comunicacion_telefonica(self.celular)
+        if self.disponible == False:
+            self.celular.central.terminar_comunicacion_telefonica(self.celular.llamada_actual)
+
+            print('Llamada finalizada. ')
+
     
     def ver_historial_llamadas(self):
-        lista = list(filter(lambda x: x.tipo == "llamada", self.celular.central.registro_comunicaciones))
-        print(lista)
+        pass
 
     def agregar_historial_llamadas(self):
         pass
     
     
-
 class Email(Aplicacion):
-    def __init__(self):
+    def __init__(self, celular: Celular):
+        super().__init__(celular)
+
         self.bandeja_email=[] #pila
         
-    def ver_bandeja_mails(self,filtrar_leido=False):
+    def ver_bandeja_mails(self, filtrar_leido=False):
         pass
-        
+
+     
 class App_Store(Aplicacion):
-    def __init__(self,celular):
-        self.celular=celular
+    def __init__(self, celular: Celular):
+        super().__init__(celular)
         
     def descargar_app(self):
         self.celular.apps[input("Que app quiere descargar?")] = Aplicacion() 
@@ -180,7 +216,7 @@ class App_Store(Aplicacion):
 
 class Configuracion(Aplicacion):
     def __init__(self, celular: Celular):
-        self.celular=celular
+        super().__init__(celular)
 
     def cambiar_nombre(self,nuevo_nombre: str):
         self.celular.nombre=nuevo_nombre
@@ -191,12 +227,16 @@ class Configuracion(Aplicacion):
         
     def activar_red_movil(self):
         #desactiva la red movil y manda la actualizacion a la central
-        self.celular.central.alta_dispositivo(self)
-        self.celular.red_movil = False
+        if self.celular.num_telefonico in self.celular.central.dispositivos_registrados:
+            self.celular.red_movil = True
+            self.celular.apps['sms'].actualizar_bandeja()
+        else:
+            print('Tu celular no esta registrado en la central. No podes activar datos')
     
     def desactivar_red_movil(self):
-        self.celular.central.baja_dispositivo(self)
+        self.celular.apps['telefono'].terminar_llamada()
         self.celular.red_movil = False
+        
         
     def toggle_disponibilidad(self):
         self.celular.disponible = not self.celular.disponible
