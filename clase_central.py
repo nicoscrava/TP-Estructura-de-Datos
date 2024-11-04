@@ -1,4 +1,5 @@
-#from main import Celular
+from clase_celular import Celular
+
 
 class Comunicacion:
     def __init__(self, emisor: 'Celular', receptor: 'Celular'):
