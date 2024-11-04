@@ -1,0 +1,34 @@
+import matplotlib.pyplot as plt
+import csv
+
+#ABRIR ARCHIVO
+with open('Play_Store_Data.csv', 'r', encoding = 'utf-8') as archivo:
+    lector = csv.reader(archivo)
+    datos = []
+    for fila in lector:
+        datos.append(fila)
+    cabecera = datos[0]
+    data = datos[1:]
+
+#GRÁFICO DE APPS POR CATEGORÍA
+
+categorias_apps = {}
+for fila in data:
+    categoria = fila[cabecera.index("Category")]
+    if categoria in categorias_apps:
+        categorias_apps[categoria]+=1
+    else:
+        categorias_apps[categoria] = 1
+
+#ORDENADO DE MAYOR A MENOR
+ordenado = dict(sorted(categorias_apps.items(), key = lambda x: x[1], reverse = True))
+
+categorias = list(ordenado.keys())
+cantidad = list(ordenado.values())
+
+plt.bar(categorias, cantidad)
+plt.xlabel("Categoría")
+plt.ylabel("Juegos por categoría")
+plt.title("Categorías App Store")
+plt.xticks(rotation=90)
+plt.show()
