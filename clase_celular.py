@@ -1,12 +1,13 @@
 from clase_central import Central, Comunicacion
 from collections import deque
 from clase_listaenlazada import ListaEnlazada, Nodo
-from clase_email import Email
+from clase_email import Email, CentralGmail
 
 
 class Celular:
     
-    central = Central()
+    central = Central() #se crea central de comunicacion
+    central_gmail = CentralGmail()
     celulares_registrados = []
 
     def __init__(self, identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico) :
@@ -498,8 +499,10 @@ class AppEmail(Aplicacion):
     def __init__(self, celular: Celular):
         super().__init__(celular)
         self.mail = f"{celular.nombre.lower().replace(' ', '')}@gmail.com"
+        celular.central_gmail.usuarios_registrados[self.mail]=celular
         self.bandeja_email = deque()  # pila para los emails
         self.necesaria = True
+        self.casillas_bloqueadas=set()
     
 
 
@@ -529,13 +532,30 @@ class AppEmail(Aplicacion):
             asunto,
             cuerpo
         )
+        
+        self.celular.central_gmail.enviar_mail(nuevo_email)
 
-        print("Email enviado exitosamente")
     
     def recibir_mail(self, email):
         """Método llamado cuando llega un nuevo email"""
         if self.celular.datos_moviles:
             self.bandeja_email.appendleft(email)  # Los más recientes aparecen primero
+            
+    def bloquear_casillas(self):
+        while True:
+            casilla=input("ingrese la casilla que desea bloquear (No podra interactuar al estar bloqueada): ")
+            try:
+                if casilla in self.celular.central_gmail.usuarios_registrados:
+                    self.casillas_bloqueadas.append(casilla) 
+            except ValueError:
+                print("Esa casilla es inexistente")
+            finally:
+                opcion=input("Desea volver a intentarlo? (si/no): ")
+                if opcion.lower()=='no':
+                    break
+                elif opcion.lower() != 'si':
+                    print("esa opcion es inexistente")
+                    break 
     
     def menu(self):
         while True:
@@ -544,7 +564,8 @@ EMAIL - {self.mail}
 1. Ver todos los emails
 2. Ver emails no leídos
 3. Enviar email
-4. Volver
+4. Bloquear casilla
+5. Volver
 
 Ingrese una opción: """)
             
@@ -555,6 +576,8 @@ Ingrese una opción: """)
             elif opcion == "3":
                 self.enviar_mail()
             elif opcion == "4":
+                self.bloquear_casillas()
+            elif opcion =="5":
                 break
             else:
                 print("Opción inválida")
