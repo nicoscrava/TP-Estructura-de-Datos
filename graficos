@@ -21,10 +21,10 @@ for fila in data:
         categorias_apps[categoria] = 1
 
 #ORDENADO DE MAYOR A MENOR
-ordenado = dict(sorted(categorias_apps.items(), key = lambda x: x[1], reverse = True))
+ordenado_cat = dict(sorted(categorias_apps.items(), key = lambda x: x[1], reverse = True))
 
-categorias = list(ordenado.keys())
-cantidad = list(ordenado.values())
+categorias = list(ordenado_cat.keys())
+cantidad = list(ordenado_cat.values())
 
 plt.bar(categorias, cantidad)
 plt.xlabel("Categoría")
@@ -35,7 +35,35 @@ plt.show()
 
 #GRAFICOS QUE SE PUEDEN HACER:
 #CATEGORIA POR PROMEDIO DE RATINGS
+
+categorias_rat = {}
+for fila in data:
+    categoria = fila[cabecera.index("Category")]
+    if fila[2] == "NaN":
+            rating = 0
+    else:
+        rating = float(fila[2])
+    if categoria in categorias_rat:
+        
+        categorias_rat[categoria]+= rating
+    else:
+        categorias_rat[categoria] = rating
+
+for i in categorias_rat.keys():
+    categorias_rat[i] = categorias_rat[i]/categorias_apps[i]
+
+
+ordenado_rating = dict(sorted(categorias_rat.items(), key = lambda x: x[1], reverse = True))
+categorias = list(ordenado_rating.keys())
+media = list(ordenado_rating.values())
+
+plt.bar(categorias, media)
+plt.xlabel("Categoría")
+plt.ylabel("Promedio de rating")
+plt.title("Promedio de rating de aplicación por categoría")
+plt.xticks(rotation=90)
+plt.show()
+
 #CATEGORIA PARA APPS CON AL MENOS 1M DESCARGAS
 #APLICACIONES PAGAS POR CATEGORIA
 #PROMEDIO DE PRECIO DE APPS PAGAS POR CAT.
-
