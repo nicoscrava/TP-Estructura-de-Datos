@@ -10,14 +10,13 @@ a ese celular
 - celular.red_movil indica si un celular tiene datos moviles, puede o no estar en la red. 
 - celular (self) ya entra en la red una vez que tiene datos moviles pero la central puede dar de baja, asi como darlo de alta denuevo
 - el celular.disponible indica si esta en llamada
+- explicar queaun que no se hayan instanciado celulares, se puede acceder a la central ya que se instancia aunque no se haya instanciado celulares
 
 
 A revisar:
-- Revisar si el sistema de cambio de codigo funciona asi o si es con 'while' 
-- Preguntar si esta bien usar dos listas separadas para los mails: leidos y no leidos 
+- automaticamente se le da alta a un celular cuando se crea?
+
 - Hacer clase de central de mails
-- Preguntar si esta mal el metodo validar_emisor que sea de la clase Aplicacion y que lo hereden todas como por ejemplo Contacto. 
-- Preguntar si se puede estar en llamada y hacer otras cosas al mismo tiempo
 
 
 Chiche para agregar: 

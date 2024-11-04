@@ -46,3 +46,23 @@ class ListaEnlazada():
             cadena+=str(aux.dato)+' '
             aux=aux.siguiente
         return cadena
+    
+    def eliminarPosicion(self, posicion):
+        """Elimina el nodo en la posición indicada"""
+        if self.inicio is None:  # Lista vacía
+            return
+            
+        if posicion == 0:  # Eliminar el primer elemento
+            self.inicio = self.inicio.siguiente
+            return
+            
+        actual = self.inicio
+        for i in range(posicion - 1):  # Nos movemos hasta el nodo anterior al que queremos eliminar
+            if actual is None:
+                return
+            actual = actual.siguiente
+            
+        if actual is None or actual.siguiente is None:  # Si llegamos al final
+            return
+            
+        actual.siguiente = actual.siguiente.siguiente  # "Saltamos" el nodo a eliminar
