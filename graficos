@@ -33,7 +33,6 @@ plt.title("Categorías App Store")
 plt.xticks(rotation=90)
 plt.show()
 
-#GRAFICOS QUE SE PUEDEN HACER:
 #CATEGORIA POR PROMEDIO DE RATINGS
 
 categorias_rat = {}
@@ -52,7 +51,6 @@ for fila in data:
 for i in categorias_rat.keys():
     categorias_rat[i] = categorias_rat[i]/categorias_apps[i]
 
-
 ordenado_rating = dict(sorted(categorias_rat.items(), key = lambda x: x[1], reverse = True))
 categorias = list(ordenado_rating.keys())
 media = list(ordenado_rating.values())
@@ -64,6 +62,49 @@ plt.title("Promedio de rating de aplicación por categoría")
 plt.xticks(rotation=90)
 plt.show()
 
-#CATEGORIA PARA APPS CON AL MENOS 1M DESCARGAS
-#APLICACIONES PAGAS POR CATEGORIA
+
+
+#GÉNEROS CON AL MENOS 3 APLICACIONES PAGAS
+
+genero_desc = {}
+for fila in data:
+    precio = fila[cabecera.index("Type")]
+    genero = fila[cabecera.index("Genres")]
+
+    if genero in genero_desc and precio != "Free":
+        genero_desc[genero]+= 1
+    elif genero not in genero_desc and precio != "Free":
+        genero_desc[genero] = 1
+
+ordenado_genero_pagas = dict(sorted(genero_desc.items(), key = lambda x: x[1], reverse = True))
+#FILTRO PARA BORRAR LOS GÉNEROS CON SOLO UNA APP
+generos_filtrados = {genero: pagos for genero, pagos in ordenado_genero_pagas.items() if pagos >= 3}
+generos = list(generos_filtrados.keys())
+pagos = list(generos_filtrados.values())
+
+plt.bar(generos, pagos)
+plt.xlabel("Género")
+plt.ylabel("Aplicaciones pagas")
+plt.title("Aplicaciones pagas por género")
+plt.xticks(rotation=90)
+plt.show()
+
+#PROPORCION DE CONTENT RATING
+
+publicos_lista = {}
+for fila in data:
+    publicos = fila[cabecera.index("Content Rating")]
+    if publicos in publicos_lista:
+        publicos_lista[publicos]+= 1
+    else:
+        publicos_lista[publicos] = 1
+
+publicos_fin = list(publicos_lista.keys())
+cant = list(publicos_lista.values())
+plt.pie(cant, labels = publicos_fin, autopct="%1.2f%%", labeldistance=1.1, rotatelabels=True)
+#OJO ACA QUE ALGUNOS LABELS SE SUPERPONEN
+plt.title("Categorías de edad", loc = "center")
+plt.show()
+
 #PROMEDIO DE PRECIO DE APPS PAGAS POR CAT.
+
