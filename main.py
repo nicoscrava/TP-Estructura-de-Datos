@@ -5,16 +5,16 @@ from clase_central import Central
 def menu_principal():
 
     while True:
-        opcion = input("""
+        opcion = int(input("""
         MENU PRINCIPAL
         1. Crear nuevo celular
         2. Usar celular existente
         3. Administrar central
         4. Generar informe de celulares
         5. Salir
-        Ingrese una opción: """)
+        Ingrese una opción: """))
         
-        if opcion == "1":
+        if opcion == 1:
             try:
                 nuevo_celular = Celular(
                     identificacion=input("ID del celular: "),
@@ -32,7 +32,7 @@ def menu_principal():
                 print(f"No se pudo crear el celular: {str(e)}")
             
             
-        elif opcion == "2":
+        elif opcion == 2:
             if not Celular.celulares_registrados:
                 print("No hay celulares creados todavía")
                 continue
@@ -51,26 +51,25 @@ def menu_principal():
                 except ValueError:
                     print("Por favor, ingrese un número válido")
                 
-        elif opcion == "3":
+        elif opcion == 3:
             try:
                 Celular.central.menu_admin()
             except Exception as e:
                 print(f"Error en el menú de administración: {str(e)}")
         
-        elif opcion == "4":
+        elif opcion == 4:
             Celular.generar_informe_csv()
 
-        elif opcion == "5":
+        elif opcion == 5:
             print("¡Hasta luego!")
             break
             
         else:
             print("Opción inválida. Por favor, seleccione una opción del menú.")
 
-celutomi=Celular('a','tomas','c','d','e','f','g','34382301')
-celunico=Celular('a','nicolas','c','d','e','f','g','12345678')
-celian=Celular('a','ian','c','d','e','f','g','12341234')
+celutomi=Celular("12345678",'tomas','c','Android','1','2','32','34382301')
+celunico=Celular("87654321",'nicolas','c','Android','2','4','64','12345678')
+celian=Celular("11223344",'ian','c','Android','2','16','128','55555555')
 celutomi.encender_apagar()
 celunico.encender_apagar()
 menu_principal()
-
