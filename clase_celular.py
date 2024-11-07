@@ -12,16 +12,65 @@ class Celular:
 
     def __init__(self, identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico) :
         
+        # Validación de identificación
+        if not isinstance(identificacion, str) or len(identificacion) != 8:
+            raise ValueError("La identificación debe ser una cadena de 8 caracteres")
+        self.identificacion = identificacion
+
+        # Validación de nombre
+        if not isinstance(nombre, str) or len(nombre.strip()) == 0:
+            raise ValueError("El nombre no puede estar vacío")
+        self.nombre = nombre.strip()
+        
+
+        # Validación de sistema operativo
+        sistemas_validos = ['Android', 'iOS']
+        if sistema_operativo not in sistemas_validos:
+            raise ValueError(f"Sistema operativo debe ser uno de: {sistemas_validos}")
+        self.sistema_operativo = sistema_operativo
+
         #atributos bases
         #falta agregar validadores
-        self.identificacion=identificacion 
-        self.nombre=nombre
         self.modelo=modelo
-        self.sistema_operativo=sistema_operativo
-        self.version=version
-        self.RAM=RAM
-        self.almacenamiento=almacenamiento
-        self.num_telefonico=num_telefonico
+
+        # Verificar si el número ya está registrado
+        for celular in Celular.celulares_registrados:
+            if celular.num_telefonico == num_telefonico:
+                raise ValueError("Este número telefónico ya está registrado")
+        self.num_telefonico = num_telefonico
+        
+                # Validación de versión
+        try:
+            version_float = float(version)
+            if version_float <= 0:
+                raise ValueError
+            self.version = version_float
+        except ValueError:
+            raise ValueError("La versión debe ser un número positivo")
+
+        # Validación de RAM
+        try:
+            ram_int = int(RAM)
+            if ram_int not in [2, 4, 8, 16, 32]:
+                raise ValueError
+            self.RAM = ram_int
+        except ValueError:
+            raise ValueError("La RAM debe ser uno de estos valores: 2, 4, 8, 16, 32 GB")
+
+        # Validación de almacenamiento
+        try:
+            almacenamiento_int = int(almacenamiento)
+            if almacenamiento_int not in [32, 64, 128, 256, 512]:
+                raise ValueError
+            self.almacenamiento = almacenamiento_int
+        except ValueError:
+            raise ValueError("El almacenamiento debe ser uno de estos valores: 32, 64, 128, 256, 512 GB")
+
+        # Validación de número telefónico
+        if not isinstance(num_telefonico, str) or not num_telefonico.isdigit() or len(num_telefonico) != 8:
+            raise ValueError("El número telefónico debe contener exactamente 8 dígitos")
+
+
         self.datos_moviles=False
 
         #atributos adicionales
@@ -29,6 +78,7 @@ class Celular:
         self.desbloqueado=False #indica si esta desbloqueado el celular
         self.codigo=None
         self.red_movil=False
+
 
         # se da de alta automaticamente al crear el celular
         self.central.alta_dispositivo(self)
@@ -501,6 +551,7 @@ class AppEmail(Aplicacion):
         self.mail = f"{celular.nombre.lower().replace(' ', '')}@gmail.com"
         celular.central_gmail.usuarios_registrados[self.mail]=celular
         self.bandeja_email = deque()  # pila para los emails
+        self.bandeja_enviados = deque()  # pila para los emails enviados
         self.necesaria = True
         self.casillas_bloqueadas=set()
     
@@ -512,10 +563,47 @@ class AppEmail(Aplicacion):
             return
             
         print("\nBandeja de entrada:")
-        for email in self.bandeja_email:
+        for i, email in enumerate(self.bandeja_email, 1):
             if not mostrar_no_leidos or not email.leido:
-                print(email)
+                print(f"\n{i}. {email}")
                 email.leido = True
+                
+        while True:
+            opcion = input("\n¿Desea reenviar alguno de estos emails? (si/no): ").lower()
+            if opcion == 'no':
+                break
+            elif opcion == 'si':
+                self.reenviar_mail()
+                break
+            else:
+                print("Por favor, responda 'si' o 'no'")
+        
+        
+    def reenviar_mail(self):
+        try:
+            opcion = int(input("\nIngrese el número del email a reenviar (0 para volver): "))
+            if opcion == 0:
+                return
+                
+            if opcion > 0 and opcion <= len(self.bandeja_email):
+                email_a_reenviar = self.bandeja_email[opcion - 1]
+                destinatario = input("Ingrese email del nuevo destinatario: ")
+                
+                nuevo_email = Email(
+                    self.mail,
+                    destinatario,
+                    f"FWD: {email_a_reenviar.asunto}",
+                    f"---------- Email reenviado ----------\n{email_a_reenviar.cuerpo}"
+                )
+                
+                if self.celular.central_gmail.enviar_mail(nuevo_email):
+                    print("Email reenviado exitosamente")
+            else:
+                print("Número de email inválido")
+        except ValueError:
+            print("Por favor ingrese un número válido")
+            
+
     
     def enviar_mail(self):
         if not self.celular.datos_moviles:
@@ -535,6 +623,10 @@ class AppEmail(Aplicacion):
         
         self.celular.central_gmail.enviar_mail(nuevo_email)
 
+    def reenviar(self, nuevo_destinatario):
+        """Crea un nuevo email para reenviar este"""
+        asunto = f"FWD: {self.asunto}"
+        return Email(self.emisor, nuevo_destinatario, asunto, self.cuerpo)
     
     def recibir_mail(self, email):
         """Método llamado cuando llega un nuevo email"""
@@ -563,9 +655,10 @@ class AppEmail(Aplicacion):
 EMAIL - {self.mail}
 1. Ver todos los emails
 2. Ver emails no leídos
-3. Enviar email
-4. Bloquear casilla
-5. Volver
+3. Ver emails enviados
+4. Enviar email
+5. Bloquear casilla
+6. Volver
 
 Ingrese una opción: """)
             
@@ -574,10 +667,12 @@ Ingrese una opción: """)
             elif opcion == "2":
                 self.ver_bandeja_mails(mostrar_no_leidos=True)
             elif opcion == "3":
-                self.enviar_mail()
+                self.ver_bandeja_enviados()
             elif opcion == "4":
+                self.enviar_mail()
+            elif opcion == "5":
                 self.bloquear_casillas()
-            elif opcion =="5":
+            elif opcion == "6":
                 break
             else:
                 print("Opción inválida")
