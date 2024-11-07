@@ -1,5 +1,4 @@
 from datetime import datetime
-from clase_celular import Celular
 
 class Email:
     def __init__(self, emisor, destinatario, asunto, cuerpo):
@@ -58,14 +57,3 @@ class CentralGmail:
         except Exception as e:
             print(f"Error al enviar email: {str(e)}")
             return False
-
-"""    def enviar_mail(self, mail: Email) :
-        #validar si el usuario existe y si el mail se puede enviar
-        if self.validar_usuario(mail.emisor, mail.destinatario):
-            #enviar mail
-            self.usuarios_registrados[mail.destinatario].celular.apps["email"].recibir_mail(mail)
-            #registrar mail enviado
-            self.usuarios_registrados[mail.emisor].celular.apps["email"].bandeja_enviados.append(mail)
-            #registrar mail
-            self.registro_mails.append(mail)
-            print("Email enviado exitosamente") """
