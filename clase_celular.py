@@ -3,6 +3,7 @@ from collections import deque
 from clase_listaenlazada import ListaEnlazada, Nodo
 from clase_email import Email, CentralGmail
 from random import *
+import funciones
 
 
 class Celular:
@@ -70,7 +71,7 @@ class Celular:
         if not isinstance(num_telefonico, str) or not num_telefonico.isdigit() or len(num_telefonico) != 8:
             raise ValueError("El número telefónico debe contener exactamente 8 dígitos")
 
-
+        #para poder usar EMAIl
         self.datos_moviles=False
 
         #atributos adicionales
@@ -88,15 +89,12 @@ class Celular:
 
         # Contiene el numero con el cual se esta en llamada
         self.llamada_actual = None
-
-        #aca se crea esta instancia para trabajar con las apps y su almacenamiento
-        self.almacenamiento_disponible=0
-
+        
         #primero se inicializa la app de contactos
         contactos = Contactos(self)
         
-        
-        
+        #aca se crea esta instancia para trabajar con las apps y su almacenamiento
+        self.almacenamiento_disponible=0
         
         #creamos un diccionario para reflejar cada aplicacion y poder identificarla por su nombre
         #la app contactos ya fue creada para poder ser pasada como argumento
@@ -354,9 +352,9 @@ class SMS(Aplicacion):
         super().__init__(celular)
         self.almacenamiento=1 #ocupa 1 gb
         celular.almacenamiento_disponible+=self.almacenamiento
-        self.bandeja_sms= ListaEnlazada() #lista enlazada 
+        self.bandeja= ListaEnlazada() #lista enlazada 
         self.contactos=contactos
-        self.mensajes_en_espera = deque() # Mensajes que te llegaron cuando no tenias la red movil activa
+        self.en_espera = deque() # COLA Mensajes que te llegaron cuando no tenias la red movil activa
         self.necesaria = True
         
     def enviar_mensaje(self):
@@ -379,41 +377,16 @@ class SMS(Aplicacion):
         # La central maneja la comunicación
         self.celular.central.comunicacion_sms(self.celular, receptor, mensaje)
         
-    def recibir_mensaje(self, mensaje: Comunicacion):
-        self.bandeja_sms.agregarInicio(Nodo(mensaje))
-        
-    def actualizar_bandeja(self):
-        cantidad_mensajes = len(self.mensajes_en_espera)
-        if cantidad_mensajes > 0:
-            print(f'\nTenes {cantidad_mensajes} mensaje/s nuevos')
-            while self.mensajes_en_espera:
-                mensaje = self.mensajes_en_espera.popleft()
-                print(mensaje)  # Mostramos el mensaje cuando se recibe
-                self.bandeja_sms.agregarInicio(Nodo(mensaje))
-        else:
-            print('\nNo hay mensajes nuevos.')
 
-    def ver_bandeja_sms(self):
-        if self.bandeja_sms.esVacia():
-            print("No hay mensajes en la bandeja")
-            return
-            
-        print("\nBandeja de mensajes:")
-        actual = self.bandeja_sms.inicio
-        while actual:
-            # Pasamos True si el emisor del mensaje es este celular
-            vista_emisor = actual.dato.emisor == self.celular
-            print(actual.dato.__str__(vista_emisor))
-            actual = actual.siguiente
     
     def eliminar_mensajes(self):
         """Permite al usuario eliminar mensajes específicos"""
-        if self.bandeja_sms.esVacia():
+        if self.bandeja.esVacia():
             print("No hay mensajes para eliminar")
             return
             
         print("\nMensajes en la bandeja:")
-        actual = self.bandeja_sms.inicio
+        actual = self.bandeja.inicio
         indice = 1
         while actual:
             print(f"{indice}. {actual.dato}")
@@ -425,9 +398,9 @@ class SMS(Aplicacion):
             if seleccion == 0:
                 return
                 
-            if 1 <= seleccion <= self.bandeja_sms.tamanio():  # Necesitamos agregar este método
+            if 1 <= seleccion <= self.bandeja.tamanio():  # Necesitamos agregar este método
                 # Eliminamos el mensaje seleccionado
-                self.bandeja_sms.eliminarPosicion(seleccion - 1)  # Y este método
+                self.bandeja.eliminarPosicion(seleccion - 1)  # Y este método
                 print("Mensaje eliminado exitosamente")
             else:
                 print("Número de mensaje inválido")
@@ -446,7 +419,7 @@ SMS
 Ingrese una opción: """)
             
             if opcion == "1":
-                self.ver_bandeja_sms()
+                funciones.ver_bandeja(self)
             elif opcion == "2":
                 if self.celular.validar_estado_emisor():
                     self.enviar_mensaje()
@@ -568,58 +541,48 @@ class AppEmail(Aplicacion):
         celular.almacenamiento_disponible+=self.almacenamiento
         self.mail = f"{celular.nombre.lower().replace(' ', '')}@gmail.com"
         celular.central_gmail.usuarios_registrados[self.mail]=celular
-        self.bandeja_email = deque()  # pila para los emails
+        self.bandeja= ListaEnlazada() #lista enlazada 
+        self.en_espera = deque() # Mensajes que te llegaron cuando no tenias la red movil activa
         self.bandeja_enviados = deque()  # pila para los emails enviados
         self.necesaria = True
         self.casillas_bloqueadas=set()
     
 
-
-    def ver_bandeja_mails(self, mostrar_no_leidos=False):
-        if not self.bandeja_email:
-            print("No hay emails en la bandeja")
-            return
-            
-        print("\nBandeja de entrada:")
-        for i, email in enumerate(self.bandeja_email, 1):
-            if not mostrar_no_leidos or not email.leido:
-                print(f"\n{i}. {email}")
-                email.leido = True
-                
+        
+        
+    def reenviar_mail(self):
+        funciones.ver_bandeja(self)
         while True:
             opcion = input("\n¿Desea reenviar alguno de estos emails? (si/no): ").lower()
             if opcion == 'no':
                 break
             elif opcion == 'si':
-                self.reenviar_mail()
-                break
+                try:
+                    opcion = int(input("\nIngrese el número del email a reenviar (0 para volver): "))
+                    if opcion == 0:
+                        return
+                        
+                    if opcion > 0 and opcion <= len(self.bandeja):
+                        email_a_reenviar = self.bandeja[opcion - 1]
+                        destinatario = input("Ingrese email del nuevo destinatario: ")
+                        
+                        nuevo_email = Email(
+                            self.mail,
+                            destinatario,
+                            f"FWD: {email_a_reenviar.asunto}",
+                            f"---------- Email reenviado ----------\n{email_a_reenviar.cuerpo}"
+                        )
+                        
+                        if self.celular.central_gmail.enviar_mail(nuevo_email):
+                            print("Email reenviado exitosamente")
+                    else:
+                        print("Número de email inválido")
+                except ValueError:
+                    print("Por favor ingrese un número válido")
+                    break
             else:
                 print("Por favor, responda 'si' o 'no'")
         
-        
-    def reenviar_mail(self):
-        try:
-            opcion = int(input("\nIngrese el número del email a reenviar (0 para volver): "))
-            if opcion == 0:
-                return
-                
-            if opcion > 0 and opcion <= len(self.bandeja_email):
-                email_a_reenviar = self.bandeja_email[opcion - 1]
-                destinatario = input("Ingrese email del nuevo destinatario: ")
-                
-                nuevo_email = Email(
-                    self.mail,
-                    destinatario,
-                    f"FWD: {email_a_reenviar.asunto}",
-                    f"---------- Email reenviado ----------\n{email_a_reenviar.cuerpo}"
-                )
-                
-                if self.celular.central_gmail.enviar_mail(nuevo_email):
-                    print("Email reenviado exitosamente")
-            else:
-                print("Número de email inválido")
-        except ValueError:
-            print("Por favor ingrese un número válido")
             
 
     
@@ -641,15 +604,7 @@ class AppEmail(Aplicacion):
         
         self.celular.central_gmail.enviar_mail(nuevo_email)
 
-    def reenviar(self, nuevo_destinatario):
-        """Crea un nuevo email para reenviar este"""
-        asunto = f"FWD: {self.asunto}"
-        return Email(self.emisor, nuevo_destinatario, asunto, self.cuerpo)
-    
-    def recibir_mail(self, email):
-        """Método llamado cuando llega un nuevo email"""
-        if self.celular.datos_moviles:
-            self.bandeja_email.appendleft(email)  # Los más recientes aparecen primero
+        
             
     def bloquear_casillas(self):
         while True:
@@ -681,9 +636,9 @@ EMAIL - {self.mail}
 Ingrese una opción: """)
             
             if opcion == "1":
-                self.ver_bandeja_mails()
+                funciones.ver_bandeja(self)
             elif opcion == "2":
-                self.ver_bandeja_mails(mostrar_no_leidos=True)
+                funciones.ver_bandeja(self, mostrar_no_leidos=True)
             elif opcion == "3":
                 self.ver_bandeja_enviados()
             elif opcion == "4":
@@ -815,7 +770,7 @@ class Configuracion(Aplicacion):
         else:   
             if self.celular.num_telefonico in self.celular.central.dispositivos_registrados:
                 self.celular.red_movil = True
-                self.celular.apps['sms'].actualizar_bandeja()
+                funciones.actualizar_bandeja(self.celular.apps['sms'])
                 print("Red móvil activada")
             else:
                 print('Tu celular no esta registrado en la central. No podes activar la red movil')
@@ -838,6 +793,9 @@ class Configuracion(Aplicacion):
             
         self.celular.datos_moviles = not self.celular.datos_moviles
         estado = "activados" if self.celular.datos_moviles else "desactivados"
+        #se actualiza la bandeja del mail cuando se prenden los datos
+        if self.celular.datos_moviles:
+            funciones.actualizar_bandeja(self.celular.apps['email'])
         print(f"Datos móviles {estado}")
         
     def validar_almacenamiento(self, almacenamiento_de_app: float):

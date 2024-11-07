@@ -1,4 +1,5 @@
 from datetime import datetime
+import funciones
 
 class Email:
     def __init__(self, emisor, destinatario, asunto, cuerpo):
@@ -47,7 +48,11 @@ class CentralGmail:
                 emisor = self.usuarios_registrados[mail.emisor]
                 
                 #enviar mail al receptor
-                receptor.celular.apps["email"].recibir_mail(mail)
+                if receptor.celular.datos_moviles:
+                    funciones.recibir_mensaje(receptor.celular.apps["email"],mail)
+                else: 
+                    #se agrega a la cola de 
+                    receptor.celular.apps["email"].en_espera.append(mail)
                 #registrar mail enviado en el emisor
                 emisor.celular.apps["email"].bandeja_enviados.append(mail)
                 #registrar mail en el registro de la central de gmail

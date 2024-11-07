@@ -1,7 +1,10 @@
 from typing import TYPE_CHECKING
+import funciones
 
 if TYPE_CHECKING:
     from clase_celular import Celular
+    
+
 
 class Comunicacion:
     def __init__(self, emisor: 'Celular', receptor: 'Celular'):
@@ -87,12 +90,12 @@ class Central:
                 
                 # Si el receptor se puede comunicar, el receptor recibe el mensaje y se crea el registro
                 if self.validar_estado_celular(celular_receptor, False):
-                    celular_receptor.apps['sms'].recibir_mensaje(comunicacion)
+                    funciones.recibir_mensaje(celular_receptor.apps['sms'],comunicacion)
                     self.registro_comunicaciones.append(comunicacion)
                     print("\nMensaje enviado exitosamente")
                 else:
                     # Si el receptor no está disponible, guardamos el mensaje en espera
-                    celular_receptor.apps['sms'].mensajes_en_espera.append(comunicacion)
+                    celular_receptor.apps['sms'].en_espera.append(comunicacion)
                     print(f"\nEl número {receptor} está fuera de servicio.")
                     print("Mensaje enviado. El destinatario lo recibirá cuando active su red móvil")
 
