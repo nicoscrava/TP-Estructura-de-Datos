@@ -2,6 +2,7 @@ from clase_central import Central, Comunicacion
 from collections import deque
 from clase_listaenlazada import ListaEnlazada, Nodo
 from clase_email import Email, CentralGmail
+from random import *
 
 
 class Celular:
@@ -22,16 +23,15 @@ class Celular:
             raise ValueError("El nombre no puede estar vacío")
         self.nombre = nombre.strip()
         
+        #no le ponemos validacion porque puede ser cualquier tipo de modelo
+        self.modelo=modelo
+        
 
         # Validación de sistema operativo
         sistemas_validos = ['Android', 'iOS']
         if sistema_operativo not in sistemas_validos:
             raise ValueError(f"Sistema operativo debe ser uno de: {sistemas_validos}")
         self.sistema_operativo = sistema_operativo
-
-        #atributos bases
-        #falta agregar validadores
-        self.modelo=modelo
 
         # Verificar si el número ya está registrado
         for celular in Celular.celulares_registrados:
@@ -62,7 +62,7 @@ class Celular:
             almacenamiento_int = int(almacenamiento)
             if almacenamiento_int not in [32, 64, 128, 256, 512]:
                 raise ValueError
-            self.almacenamiento = almacenamiento_int
+            self.almacenamiento = float(almacenamiento_int) #se convierte a float para trabajar mejor 
         except ValueError:
             raise ValueError("El almacenamiento debe ser uno de estos valores: 32, 64, 128, 256, 512 GB")
 
@@ -91,6 +91,9 @@ class Celular:
         
         #primero se inicializa la app de contactos
         contactos = Contactos(self)
+        
+        #aca se crea esta instancia para trabajar con las apps y su almacenamiento
+        self.almacenamiento_disponible=0
         
         #creamos un diccionario para reflejar cada aplicacion y poder identificarla por su nombre
         #la app contactos ya fue creada para poder ser pasada como argumento
@@ -273,11 +276,15 @@ Ingrese una opción: """)
             
         except Exception as e:
             print(f"Error al generar el informe: {str(e)}")
+    
+        
+
 
 class Aplicacion():
 
     def __init__ (self, celular: Celular):
         self.celular = celular
+        self.almacenamiento= None
         self.necesaria = False
 
     def menu(self):
@@ -290,6 +297,8 @@ class Contactos(Aplicacion):
     def __init__(self, celular: Celular):
         super().__init__(celular)
         self.lista_de_contactos={}
+        self.almacenamiento=1 #ocupa 1 gb
+        celular.almacenamiento_disponible+=self.almacenamiento
         self.necesaria = True
     
     def ver_contactos(self):
@@ -340,6 +349,8 @@ class Contactos(Aplicacion):
 class SMS(Aplicacion):
     def __init__(self, celular: Celular, contactos: Contactos):
         super().__init__(celular)
+        self.almacenamiento=1 #ocupa 1 gb
+        celular.almacenamiento_disponible+=self.almacenamiento
         self.bandeja_sms= ListaEnlazada() #lista enlazada 
         self.contactos=contactos
         self.mensajes_en_espera = deque() # Mensajes que te llegaron cuando no tenias la red movil activa
@@ -446,6 +457,8 @@ Ingrese una opción: """)
 class Telefono(Aplicacion):
     def __init__(self, celular: Celular, contactos):
         super().__init__(celular)
+        self.almacenamiento=1 #ocupa 1 gb
+        celular.almacenamiento_disponible+=self.almacenamiento
         self.historial_llamadas=deque() #Pila para ver cual llega primero
         self.contactos=contactos
         self.necesaria = True
@@ -548,6 +561,8 @@ Ingrese una opción: """)
 class AppEmail(Aplicacion):
     def __init__(self, celular: Celular):
         super().__init__(celular)
+        self.almacenamiento=3 #ocupa 3gb
+        celular.almacenamiento_disponible+=self.almacenamiento
         self.mail = f"{celular.nombre.lower().replace(' ', '')}@gmail.com"
         celular.central_gmail.usuarios_registrados[self.mail]=celular
         self.bandeja_email = deque()  # pila para los emails
@@ -681,6 +696,8 @@ Ingrese una opción: """)
 class App_Store(Aplicacion):
     def __init__(self, celular: Celular):
         super().__init__(celular)
+        self.almacenamiento= 2 #ocupa 2gb
+        celular.almacenamiento_disponible+=self.almacenamiento
         self.necesaria = True
         
     def descargar_app(self):
@@ -693,9 +710,14 @@ class App_Store(Aplicacion):
             print("Esta aplicación ya está instalada")
             return
             
-        # Aquí se podrían agregar validaciones de apps disponibles
-        self.celular.apps[app] = Aplicacion(self.celular)
-        print(f"App '{app}' descargada exitosamente")
+        # Se crea un almacenamiento random  entre 0 y 2
+        almacenamiento_de_nueva_app=random.uniform(0,2)
+        #si pasa la verificacion este almacenamiento, se le pasa como atributo a la nueva app
+        if self.celular.apps['configuracion'].validar_almacenamiento(almacenamiento_de_nueva_app):
+            self.celular.apps[app] = Aplicacion(self.celular)
+            self.celular.apps[app].almacenamiento=almacenamiento_de_nueva_app #se le pasa como atributo el almacenamiento ya verificado
+            print(f"App '{app}' descargada exitosamente")
+        
 
     def borrar_app(self):
         print("\nApps instaladas:")
@@ -719,8 +741,12 @@ class App_Store(Aplicacion):
             print("Esta aplicación no se puede borrar")
             return
             
-        del self.celular.apps[app]
+        else:
+            del self.celular.apps[app]
+            self.celular.almacenamiento_disponible-= self.celular.apps[app].almacenamiento #se libera almacenamiento al borrar
         print(f"App '{app}' borrada exitosamente")
+        
+        
     
     def menu(self):
         while True:
@@ -748,6 +774,8 @@ Ingrese una opción: """)
 class Configuracion(Aplicacion):
     def __init__(self, celular: Celular):
         super().__init__(celular)
+        self.almacenamiento=1.5 #ocupa gb
+        celular.almacenamiento+=self.almacenamiento
         self.necesaria = True
         
     def cambiar_codigo(self):
@@ -808,6 +836,16 @@ class Configuracion(Aplicacion):
         self.celular.datos_moviles = not self.celular.datos_moviles
         estado = "activados" if self.celular.datos_moviles else "desactivados"
         print(f"Datos móviles {estado}")
+        
+    def validar_almacenamiento(self, almacenamiento_de_app: float):
+        #se puede agregar esta app
+        if self.celular.almacenamiento_disponible + almacenamiento_de_app<=self.celular.almacenamiento:
+            self.celular.almacenamiento_disponible+=almacenamiento_de_app
+            return True
+        #ocupa mas espacio del disponible
+        if self.celular.almacenamiento_disponible + almacenamiento_de_app>self.celular.almacenamiento: 
+            print("No se puede descargar esta aplicacion debido a que ocupa mas del espacio que tiene disponible")
+            return False
 
     def menu(self):
         while True:
