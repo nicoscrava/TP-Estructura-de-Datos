@@ -99,12 +99,25 @@ for fila in data:
     else:
         publicos_lista[publicos] = 1
 
-publicos_fin = list(publicos_lista.keys())
-cant = list(publicos_lista.values())
+
+suma_minorias = 0
+categ = "Otros"
+for i in publicos_lista.keys():
+    if publicos_lista[i]/len(data) < 0.01:
+        if suma_minorias == 0:
+            suma_minorias = publicos_lista[i]
+        else:
+            suma_minorias += publicos_lista[i]
+
+publicos_lista[categ] = suma_minorias
+
+categorias_filtrados = {categorias: nombre for categorias, nombre in publicos_lista.items() if (nombre/len(data) > 0.01) or (categorias == "Otros")}
+
+
+
+publicos_fin = list(categorias_filtrados.keys())
+cant = list(categorias_filtrados.values())
 plt.pie(cant, labels = publicos_fin, autopct="%1.2f%%", labeldistance=1.1, rotatelabels=True)
 #OJO ACA QUE ALGUNOS LABELS SE SUPERPONEN
 plt.title("Categorías de edad", loc = "center")
 plt.show()
-
-#PROMEDIO DE PRECIO DE APPS PAGAS POR CAT.
-
