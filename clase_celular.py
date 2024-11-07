@@ -88,12 +88,15 @@ class Celular:
 
         # Contiene el numero con el cual se esta en llamada
         self.llamada_actual = None
-        
+
+        #aca se crea esta instancia para trabajar con las apps y su almacenamiento
+        self.almacenamiento_disponible=0
+
         #primero se inicializa la app de contactos
         contactos = Contactos(self)
         
-        #aca se crea esta instancia para trabajar con las apps y su almacenamiento
-        self.almacenamiento_disponible=0
+        
+        
         
         #creamos un diccionario para reflejar cada aplicacion y poder identificarla por su nombre
         #la app contactos ya fue creada para poder ser pasada como argumento
@@ -298,7 +301,7 @@ class Contactos(Aplicacion):
         super().__init__(celular)
         self.lista_de_contactos={}
         self.almacenamiento=1 #ocupa 1 gb
-        celular.almacenamiento_disponible+=self.almacenamiento
+        celular.almacenamiento_disponible +=self.almacenamiento
         self.necesaria = True
     
     def ver_contactos(self):
