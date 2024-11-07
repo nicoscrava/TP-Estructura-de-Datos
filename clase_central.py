@@ -1,5 +1,7 @@
-from clase_celular import Celular
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from clase_celular import Celular
 
 class Comunicacion:
     def __init__(self, emisor: 'Celular', receptor: 'Celular'):
