@@ -18,14 +18,14 @@ def menu_principal():
             if opcion == 1:
                 try:
                     nuevo_celular = Celular(
-                        identificacion=input("ID del celular: "),
-                        nombre=input("Nombre del celular: "),
+                        identificacion=input("(8 caracteres) ID del celular: "),
+                        nombre=input("(obligatorio) Nombre del celular: "),
                         modelo=input("Modelo: "),
                         sistema_operativo=input("Sistema operativo: "),
-                        version=input("Versión: "),
+                        version=input("(X.Y.Z) Versión: "),
                         RAM=input("RAM (GB): "),
                         almacenamiento=input("Almacenamiento (GB): "),
-                        num_telefonico=input("Número telefónico: ")
+                        num_telefonico=input("(8 dígitos) Número telefónico: ")
                     )
                     print(f"Celular creado con número {nuevo_celular.num_telefonico}")
                     
@@ -99,6 +99,6 @@ celutomi.central_gmail.enviar_mail(email2)
 
 
 celutomi.apps['contactos'].lista_de_contactos["nicolas"] = "22222222"
-celian.apps['contactos'].lista_de_contactos["nico"] = "22222222"
+celunico.apps['contactos'].lista_de_contactos["tomi"] = "11111111"
 
 menu_principal()

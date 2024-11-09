@@ -152,7 +152,7 @@ CELULAR APAGADO
 1. Encender celular
 2. Volver al menú principal
 
-Ingrese una opci��n: """)
+Ingrese una opción: """)
                 
                 if opcion == "1":
                     self.encender_apagar()
@@ -258,7 +258,7 @@ Ingrese una opción: """)
             bool: True si el celular está habilitado para emitir comunicaciones, False en caso contrario
         """
         if not self.red_movil:
-            print('Tu celular no puede enviar mensajes. Activa la red móvil.')
+            print('Tu celular no se puede comunicar. Activa la red móvil. ')
             return False
         
         if self.num_telefonico not in self.central.dispositivos_registrados:
@@ -413,10 +413,10 @@ class Contactos(Aplicacion):
                 elif opcion == 'no':
                     print("Contacto no agregado. ")
                     break
-            else:
-                self.lista_de_contactos[nombre] = numero
-                print(f"Contacto agregado: {nombre} - {numero}")
-                break
+            
+            self.lista_de_contactos[nombre] = numero
+            print(f"Contacto agregado: {nombre} - {numero}")
+            break
             
     def modificar_contacto(self):
         """
@@ -453,20 +453,22 @@ class Contactos(Aplicacion):
         if opcion == "1":
             while True:
                 nombre_base = input("Ingrese el nuevo nombre: ")
-                nombre_nuevo = self.revisar_repeticiones_nombre(nombre_base)
                 
-                if nombre_nuevo != nombre_base:
-                    opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre}'? (si/no): ").lower()
+                if nombre_base in self.lista_de_contactos and nombre_base != nombre:
+                    nombre_nuevo = self.revisar_repeticiones_nombre(nombre_base)
+                    opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre_nuevo}'? (si/no): ").lower()
                     if opcion != 'si' and opcion != 'no':
                         print("Opción inválida")
+                        continue
                     elif opcion == 'no':
-                        print("Contacto no modificado. ")
+                        print("Contacto no modificado.")
                         break
+                    nombre_base = nombre_nuevo
                 
                 numero = self.lista_de_contactos[nombre]
                 del self.lista_de_contactos[nombre]
-                self.lista_de_contactos[nombre_nuevo] = numero
-                print(f"Nombre modificado: {nombre_nuevo} - {numero}")
+                self.lista_de_contactos[nombre_base] = numero
+                print(f"Nombre modificado: {nombre_base} - {numero}")
                 break
                     
         elif opcion == "2":
@@ -476,7 +478,7 @@ class Contactos(Aplicacion):
                     print("El número debe contener solo dígitos")
                 elif len(nuevo_numero) != 8:
                     print("El número debe tener 8 dígitos")
-                elif nuevo_numero in self.lista_de_contactos.values():
+                elif nuevo_numero in self.lista_de_contactos.values() and nuevo_numero != self.lista_de_contactos[nombre]:
                     print("Este número ya existe en contactos")
                 else:
                     self.lista_de_contactos[nombre] = nuevo_numero
@@ -495,11 +497,12 @@ class Contactos(Aplicacion):
         Returns:
             str: El nombre modificado si había repetición, o el original si no había conflicto
         """
+        nombre_actual = nombre_base
         contador = 1
-        while nombre_base in self.lista_de_contactos:
-            nombre_base = f"{nombre_base}({contador})"
+        while nombre_actual in self.lista_de_contactos:
+            nombre_actual = f"{nombre_base}({contador})"
             contador += 1
-        return nombre_base
+        return nombre_actual
 
     def menu(self):
         while True:
@@ -768,7 +771,7 @@ class Telefono(Aplicacion):
             return
             
         print("\nHistorial de llamadas:")
-        for i, llamada in enumerate(self.historial_llamadas, 1):
+        for i, llamada in enumerate(reversed(self.historial_llamadas), 1):
             es_llamada_saliente = llamada.emisor == self.celular
             emisor = self.obtener_nombre_contacto(llamada.emisor.num_telefonico)
             receptor = self.obtener_nombre_contacto(llamada.receptor.num_telefonico)
@@ -954,7 +957,9 @@ class AppEmail(Aplicacion):
                 
             email = self.bandeja.obtener_nodo(opcion - 1).dato
             destinatario = input("Ingrese email del nuevo destinatario: ").strip()
-            
+            if destinatario in self.casillas_bloqueadas:
+                print("Has bloqueado esta casilla de correo. No se puede reenviar el email. ")
+                return False
             nuevo_email = Email(
                 self.mail,
                 destinatario,
@@ -1161,7 +1166,7 @@ Ingrese una opción: """)
             elif opcion == "2":
                 self.borrar_app()
             elif opcion == "3":
-                print("\nApps instaladas:", list(self.celular.apps.keys()))
+                print("\nApps instaladas: " + ", ".join(self.celular.apps.keys()) + ".")
             elif opcion == "4":
                 break
             else:

@@ -194,18 +194,19 @@ class Central:
             
         celular_receptor = self.dispositivos_registrados[receptor]
         
-        
-        if not (self.validar_estado_celular(celular_emisor, True, True) and 
-                self.validar_estado_celular(celular_receptor, False, True)):
+        if not self.validar_estado_celular(celular_emisor, True, True):
+            return
+            
+        if not self.validar_estado_celular(celular_receptor, False, True):
+            if not celular_receptor.red_movil:
+                print(f'\nEl número {receptor} está fuera de servicio.')
             return
         
         comunicacion = Llamada(celular_emisor, celular_receptor)
         
-        
         celular_receptor.apps['telefono'].historial_llamadas.append(comunicacion)
         celular_emisor.apps['telefono'].historial_llamadas.append(comunicacion)
 
-       
         if celular_receptor.apps['telefono'].recibir_llamada(comunicacion):
             comunicacion.llamada_aceptada = True
             comunicacion.llamada_en_transcurso = True
