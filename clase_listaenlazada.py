@@ -1,4 +1,3 @@
-
 class Nodo:
     def __init__(self,dato):
         self.dato = dato
@@ -11,6 +10,7 @@ class Nodo:
 class ListaEnlazada():
     def __init__(self,inicio=None):
         self.inicio=inicio
+        self.tamanio = 0
 
     def esVacia(self):
         return self.inicio==None
@@ -21,6 +21,7 @@ class ListaEnlazada():
         else:
             nodo.siguiente=self.inicio
             self.inicio=nodo
+        self.tamanio += 1
             
     def agregarFinal(self,nodo:Nodo):
         if self.esVacia():
@@ -30,6 +31,7 @@ class ListaEnlazada():
             while aux.siguiente!=None:
                 aux=aux.siguiente
             aux.siguiente=nodo
+        self.tamanio += 1
     
     def pop(self):
         if self.esVacia():
@@ -37,6 +39,7 @@ class ListaEnlazada():
         else:
             dato=self.inicio.dato
             self.inicio=self.inicio.siguiente
+            self.tamanio -= 1
             return f'se elimino {dato}'
         
     def __str__(self):
@@ -48,21 +51,33 @@ class ListaEnlazada():
         return cadena
     
     def eliminarPosicion(self, posicion):
-        """Elimina el nodo en la posición indicada"""
-        if self.inicio is None:  # Lista vacía
+        if posicion < 0 or posicion >= self.tamanio:
+            return "Posición inválida"
+            
+        if self.inicio is None:
             return
             
-        if posicion == 0:  # Eliminar el primer elemento
+        if posicion == 0:
             self.inicio = self.inicio.siguiente
+            self.tamanio -= 1
             return
             
         actual = self.inicio
-        for i in range(posicion - 1):  # Nos movemos hasta el nodo anterior al que queremos eliminar
+        for i in range(posicion - 1):
             if actual is None:
                 return
             actual = actual.siguiente
             
-        if actual is None or actual.siguiente is None:  # Si llegamos al final
+        if actual is None or actual.siguiente is None:
             return
             
-        actual.siguiente = actual.siguiente.siguiente  # "Saltamos" el nodo a eliminar
+        actual.siguiente = actual.siguiente.siguiente
+        self.tamanio -= 1
+
+    def obtener_nodo(self, posicion):
+        if posicion < 0 or posicion >= self.tamanio:
+            return "Posición inválida"
+        actual = self.inicio
+        for i in range(posicion):
+            actual = actual.siguiente
+        return actual   

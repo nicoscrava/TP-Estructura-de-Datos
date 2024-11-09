@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
-import funciones
-
+from datetime import datetime
 if TYPE_CHECKING:
     from clase_celular import Celular
     
@@ -11,10 +10,6 @@ class Comunicacion:
         self.emisor = emisor
         self.receptor = receptor
     
-    def _obtener_identificador_emisor(self):
-        if self.emisor.nombre in self.receptor.apps['contactos'].lista_de_contactos:
-            return self.emisor.nombre
-        return self.emisor.num_telefonico
 
 class SMS(Comunicacion):
     def __init__(self, emisor: 'Celular', receptor: 'Celular', contenido: str):
@@ -24,8 +19,8 @@ class SMS(Comunicacion):
     
     def __str__(self, vista_emisor=False):
         if vista_emisor:
-            return f'Mensaje enviado a: {self.receptor.num_telefonico}\n Mensaje: {self.contenido}'
-        return f'Mensaje de: {self._obtener_identificador_emisor()}\n Mensaje: {self.contenido}'
+            return f'Mensaje enviado a: {self.emisor.apps["sms"].obtener_nombre_contacto(self.receptor.num_telefonico)}\n Mensaje: {self.contenido}'
+        return f'Mensaje de: {self.receptor.apps["sms"].obtener_nombre_contacto(self.emisor.num_telefonico)}\n Mensaje: {self.contenido}'
 
 class Llamada(Comunicacion):
     def __init__(self, emisor: 'Celular', receptor: 'Celular'):
@@ -33,12 +28,13 @@ class Llamada(Comunicacion):
         self.tipo = 'llamada'
         self.llamada_aceptada = False
         self.llamada_en_transcurso = False
+        self.fecha_inicio = datetime.now()
     
     def __str__(self, vista_emisor=False):
         estado = 'aceptada' if self.llamada_aceptada else 'perdida'
         if vista_emisor:
             return f'Llamada {estado} a {self.receptor.num_telefonico}'
-        return f'Llamada {estado} de {self._obtener_identificador_emisor()}'
+        return f'Llamada {estado} de {self.receptor.apps["telefono"].obtener_nombre_contacto(self.emisor.num_telefonico)}'
     
 
 class Central:
@@ -53,7 +49,7 @@ class Central:
             with open('informe_comunicaciones.txt', 'w') as archivo:
                 for comunicacion in self.registro_comunicaciones:
                     if isinstance(comunicacion, SMS):
-                        archivo.write(f"SMS de {comunicacion.emisor.nombre} - {comunicacion.emisor.num_telefonico} a {comunicacion.receptor.nombre} - {comunicacion.receptor.num_telefonico}\n")
+                        archivo.write(f"SMS de {comunicacion.emisor.num_telefonico} a {comunicacion.receptor.num_telefonico}.\n")
                     elif isinstance(comunicacion, Llamada):
                         estado = "aceptada" if comunicacion.llamada_aceptada else "rechazada"
                         archivo.write(f"Llamada {estado} de {comunicacion.emisor.num_telefonico} a {comunicacion.receptor.num_telefonico}\n")
@@ -90,7 +86,7 @@ class Central:
                 
                 # Si el receptor se puede comunicar, el receptor recibe el mensaje y se crea el registro
                 if self.validar_estado_celular(celular_receptor, False):
-                    funciones.recibir_mensaje(celular_receptor.apps['sms'],comunicacion)
+                    celular_receptor.apps['sms'].recibir_mensaje(comunicacion)
                     self.registro_comunicaciones.append(comunicacion)
                     print("\nMensaje enviado exitosamente")
                 else:
@@ -100,37 +96,55 @@ class Central:
                     print("Mensaje enviado. El destinatario lo recibirá cuando active su red móvil")
 
     def comunicacion_telefonica(self, celular_emisor: 'Celular', receptor: str):
-
+        """
+        Gestiona una llamada telefónica entre dos celulares.
+        
+        Args:
+            celular_emisor (Celular): Celular que inicia la llamada
+            receptor (str): Número telefónico del receptor
+            
+        La función verifica que:
+        - El receptor esté registrado en la central
+        - Ambos celulares tengan red móvil activa y estén disponibles
+        - El receptor acepte la llamada
+        
+        Si la llamada es exitosa:
+        - Se crea un objeto Llamada y se agrega al historial de ambos celulares
+        - Se marca a ambos celulares como no disponibles
+        - Se establece la llamada actual en ambos celulares
+        
+        Si la llamada falla:
+        - Se notifica el motivo del fallo
+        - Se agrega al registro de comunicaciones
+        """
         if receptor not in self.dispositivos_registrados:
             print(f'\nEl número {receptor} no se encuentra registrado en la red.')
+            return
             
+        celular_receptor = self.dispositivos_registrados[receptor]
+        
+        # Validamos ambos celulares antes de crear la comunicación
+        if not (self.validar_estado_celular(celular_emisor, True, True) and 
+                self.validar_estado_celular(celular_receptor, False, True)):
+            return
+        
+        comunicacion = Llamada(celular_emisor, celular_receptor)
+        
+        # Agregamos al historial de ambos celulares
+        celular_receptor.apps['telefono'].historial_llamadas.append(comunicacion)
+        celular_emisor.apps['telefono'].historial_llamadas.append(comunicacion)
+
+        # Si se acepta la llamada
+        if celular_receptor.apps['telefono'].recibir_llamada(comunicacion):
+            comunicacion.llamada_aceptada = True
+            comunicacion.llamada_en_transcurso = True
+            celular_emisor.disponible = False
+            celular_emisor.llamada_actual = comunicacion
+            print(f'\nEstas en llamada con {receptor}')
         else:
-            celular_receptor = self.dispositivos_registrados[receptor]
+            print('\nLlamada rechazada.')
 
-            # Si el receptor se puede comunicar se crea la comunicacion 
-            if self.validar_estado_celular(celular_emisor, True, True):
-                if self.validar_estado_celular(celular_receptor, False, True):
-                    
-                    comunicacion = Llamada(celular_emisor, celular_receptor)
-                    celular_receptor.apps['telefono'].historial_llamadas.append(comunicacion)
-                    celular_emisor.apps['telefono'].historial_llamadas.append(comunicacion)
-
-                    # Si se acepta la llamada, se le cambia el atributo llamada_aceptada de la comunicacion
-                    if celular_receptor.apps['telefono'].recibir_llamada(comunicacion):
-                        comunicacion.llamada_aceptada = True
-                        print(f'\nEstas en llamada con {receptor}')
-                        celular_emisor.disponible = False
-                        celular_emisor.llamada_actual = comunicacion
-                        comunicacion.llamada_en_transcurso = True
-
-
-                    # Si rechaza la llamada el atributo llamada_aceptada queda como False
-                    else:
-
-                        print('\nLlamada rechazada.')
-
-                    # Se agrega la comunicacion al registro
-                    self.registro_comunicaciones.append(comunicacion)
+        self.registro_comunicaciones.append(comunicacion)
 
     def terminar_comunicacion_telefonica(self, comunicacion: Llamada):
         comunicacion.llamada_en_transcurso = False
