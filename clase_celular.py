@@ -409,10 +409,10 @@ class Contactos(Aplicacion):
                 elif opcion == 'no':
                     print("Contacto no agregado. ")
                     break
-                else:
-                    self.lista_de_contactos[nombre] = numero
-                    print(f"Contacto agregado: {nombre} - {numero}")
-                    break
+            else:
+                self.lista_de_contactos[nombre] = numero
+                print(f"Contacto agregado: {nombre} - {numero}")
+                break
             
     def modificar_contacto(self):
         """
@@ -449,9 +449,9 @@ class Contactos(Aplicacion):
         if opcion == "1":
             while True:
                 nombre_base = input("Ingrese el nuevo nombre: ")
-                nombre = self.revisar_repeticiones_nombre(nombre_base)
+                nombre_nuevo = self.revisar_repeticiones_nombre(nombre_base)
                 
-                if nombre != nombre_base:
+                if nombre_nuevo != nombre_base:
                     opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre}'? (si/no): ").lower()
                     if opcion != 'si' and opcion != 'no':
                         print("Opción inválida")
@@ -461,8 +461,8 @@ class Contactos(Aplicacion):
                 
                 numero = self.lista_de_contactos[nombre]
                 del self.lista_de_contactos[nombre]
-                self.lista_de_contactos[nombre] = numero
-                print(f"Nombre modificado: {nombre} - {numero}")
+                self.lista_de_contactos[nombre_nuevo] = numero
+                print(f"Nombre modificado: {nombre_nuevo} - {numero}")
                 break
                     
         elif opcion == "2":
@@ -1090,8 +1090,8 @@ class App_Store(Aplicacion):
         almacenamiento_de_nueva_app=random.uniform(0,2)
         if self.celular.apps['configuracion'].validar_almacenamiento(almacenamiento_de_nueva_app):
             self.celular.almacenamiento_ocupado += almacenamiento_de_nueva_app
-            self.celular.apps[app] = Aplicacion(self.celular)
-            self.celular.apps[app].almacenamiento=almacenamiento_de_nueva_app
+            self.celular.apps[app.lower()] = Aplicacion(self.celular)
+            self.celular.apps[app.lower()].almacenamiento=almacenamiento_de_nueva_app
             print(f"App '{app}' descargada exitosamente")
         else:
             print("No hay espacio suficiente para descargar la app")
