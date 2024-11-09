@@ -3,7 +3,6 @@ from collections import deque
 from clase_listaenlazada import ListaEnlazada, Nodo
 from clase_email import Email, CentralGmail
 import random
-from abc import ABC, abstractmethod
 
 
 class Celular:
@@ -387,13 +386,18 @@ class Contactos(Aplicacion):
         entre paréntesis y consulta al usuario si acepta.
         """
         while True:
-            numero = input("Ingrese número: ")
+            numero = input("\nIngrese el número del contacto (8 dígitos) o 'cancelar' para volver: ").strip()
+            if numero.lower() == "cancelar":
+                print("\nOperación cancelada")
+                return
             if not numero.isdigit():
                 print("El número debe contener solo dígitos")
             elif len(numero) != 8:
                 print("El numero debe tener 8 dígitos")
             elif numero in self.lista_de_contactos.values():
                 print("Este número ya existe en contactos")
+            elif numero==self.celular.num_telefonico:
+                print("No puedes agregar un contacto con tu mismo número")
             else:
                 break
         
@@ -553,6 +557,9 @@ class SMS(Aplicacion):
                 receptor = self.contactos.lista_de_contactos[receptor]
             elif not receptor.isdigit() or len(receptor) != 8:
                 raise ValueError("Número inválido. Debe contener 8 dígitos.")
+            elif receptor==self.celular.num_telefonico:
+                print("No puedes enviar un mensaje a ti mismo")
+                raise ValueError("No puedes enviar un mensaje a ti mismo")
                 
             mensaje = input("\nEscriba su mensaje: ")
             if not mensaje.strip():
@@ -690,11 +697,12 @@ class Telefono(Aplicacion):
             
             if receptor in self.contactos.lista_de_contactos:
                 receptor = self.contactos.lista_de_contactos[receptor]
-            else:
-                
-                if not receptor.isdigit() or len(receptor) != 8:
-                    print("Número inválido. Debe contener 8 dígitos.")
-                    return
+            elif receptor==self.celular.num_telefonico:
+                print("No puedes llamar a ti mismo")
+                return
+            elif not receptor.isdigit() or len(receptor) != 8:
+                print("Número inválido. Debe contener 8 dígitos.")
+                return
             
             self.celular.central.comunicacion_telefonica(self.celular, receptor)
         else:
@@ -715,9 +723,9 @@ class Telefono(Aplicacion):
             nombre_contacto = self.obtener_nombre_contacto(comunicacion.emisor.num_telefonico)
             
             if nombre_contacto != comunicacion.emisor.num_telefonico:
-                eleccion = input(f'{nombre_contacto} te está llamando. ¿Desea aceptar la llamada? (si/no)')
+                eleccion = input(f'{self.celular.nombre}, {nombre_contacto} te está llamando. ¿Desea aceptar la llamada? (si/no)')
             else:
-                eleccion = input(f'El numero {comunicacion.emisor.num_telefonico} te esta llamando. Desea aceptar la llamada? (si/no)')
+                eleccion = input(f'{self.celular.nombre}, el numero {comunicacion.emisor.num_telefonico} te esta llamando. Desea aceptar la llamada? (si/no)')
                 
             if eleccion.lower() == 'si':
                 self.celular.disponible = False
@@ -921,6 +929,7 @@ class AppEmail(Aplicacion):
    
     def reenviar_mail(self):
         """
+        
         Permite reenviar un email existente a otro destinatario.
         Mantiene la información del email original.
         
@@ -930,26 +939,40 @@ class AppEmail(Aplicacion):
         if not self.ver_bandeja():
             print("No hay emails para reenviar")
             return False
+                
+        try:
+            opcion = input("\nIngrese el número del email a reenviar (0 para volver): ").strip()
             
-        opcion = int(input("\nIngrese el número del email a reenviar (0 para volver): "))
-        if opcion == 0 or opcion > self.bandeja.tamanio:
+            if opcion == "0":
+                return False
+                
+            opcion = int(opcion)
+            
+            if opcion < 0 or opcion > self.bandeja.tamanio:
+                print("El número ingresado no es válido")
+                return False
+                
+            email = self.bandeja.obtener_nodo(opcion - 1).dato
+            destinatario = input("Ingrese email del nuevo destinatario: ").strip()
+            
+            nuevo_email = Email(
+                self.mail,
+                destinatario,
+                f"FWD: {email.asunto}",
+                f"---------- Email reenviado ----------\nDe: {email.emisor}\nPara: {email.destinatario}\nFecha original: {email.fecha}\n{email.cuerpo}"
+            )
+                
+            if self.celular.central_gmail.enviar_mail(nuevo_email):
+                print("Email reenviado exitosamente")
+                return True
+                
+            print("No se pudo reenviar el email")
             return False
             
-        email = self.bandeja.obtener_nodo(opcion - 1).dato
-        destinatario = input("Ingrese email del nuevo destinatario: ").strip()
-        
-        nuevo_email = Email(
-            self.mail,
-            destinatario,
-            f"FWD: {email.asunto}",
-            f"---------- Email reenviado ----------\nDe: {email.emisor}\nPara: {email.destinatario}\nFecha original: {email.fecha}\n{email.cuerpo}"
-        )
+        except ValueError:
+            print("Debe ingresar un número válido")
+            return False
             
-        if self.celular.central_gmail.enviar_mail(nuevo_email):
-            print("Email reenviado exitosamente")
-            return True
-        return False
-           
     def bloquear_casillas(self):
         """
         Permite bloquear múltiples casillas de correo.
