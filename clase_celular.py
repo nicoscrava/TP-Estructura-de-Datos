@@ -43,7 +43,7 @@ class Celular:
         Raises:
             ValueError: Si algún parámetro no cumple con los requisitos de formato o valor
         """
-        # Validación de identificación
+        
         if len(identificacion) != 8:
             raise ValueError("La identificación debe tener exactamente 8 caracteres.")
         if " " in identificacion:
@@ -52,25 +52,21 @@ class Celular:
             raise ValueError("Esta identificación ya está registrada en otro celular.")
         self.identificacion = identificacion
 
-        # Validación de nombre
         nombre = nombre.strip()
         if len(nombre) == 0:
             raise ValueError("El nombre no puede estar vacío.")
         self.nombre = nombre
         
-        # El modelo puede ser cualquier string no vacío
         modelo = modelo.strip()
         if len(modelo) == 0:
             raise ValueError("El modelo no puede estar vacío.")
         self.modelo = modelo
 
-        # Validación de sistema operativo
         sistema_operativo = sistema_operativo.strip().lower()
         if sistema_operativo not in self.VALID_OS_VALUES:
             raise ValueError(f"Sistema operativo debe ser uno de: {', '.join(self.VALID_OS_VALUES)}")
         self.sistema_operativo = sistema_operativo
 
-        # Validación de número telefónico
         num_telefonico = num_telefonico.strip()
         if not num_telefonico.isdigit() or len(num_telefonico) != 8:
             raise ValueError("El número telefónico debe ser una cadena con 8 dígitos")
@@ -78,9 +74,7 @@ class Celular:
             raise ValueError("Este número telefónico ya está registrado")
         self.num_telefonico = num_telefonico
         
-        # Validación de versión
         try:
-            # Validamos que sea un formato de versión válido (ej: "1", "1.0", "1.1.2")
             partes = str(version).split('.')
             for parte in partes:
                 if not parte.isdigit() or int(parte) < 0:
@@ -89,7 +83,6 @@ class Celular:
         except ValueError:
             raise ValueError("La versión debe tener un formato válido (ej: 1, 1.0, 1.1.2)")
 
-        # Validación de RAM
         try:
             ram_int = int(RAM)
             if ram_int not in self.VALID_RAM_VALUES:
@@ -98,53 +91,36 @@ class Celular:
         except ValueError:
             raise ValueError(f"La RAM debe ser uno de estos valores: {', '.join(str(x) for x in self.VALID_RAM_VALUES)} GB")
 
-        # Validación de almacenamiento
         try:
             almacenamiento_int = int(almacenamiento)
             if almacenamiento_int not in self.VALID_STORAGE_VALUES:
                 raise ValueError
-            self.almacenamiento = float(almacenamiento_int) #se convierte a float para trabajar mejor 
+            self.almacenamiento = float(almacenamiento_int) 
         except ValueError:
             raise ValueError(f"El almacenamiento debe ser uno de estos valores: {', '.join(str(x) for x in self.VALID_STORAGE_VALUES)} GB")
 
-
-        #para poder usar EMAIl
+        # variables de estado
         self.datos_moviles=False
-
-        #atributos adicionales
-        self.encendido = False #indica si esta encendido o apagado
-        self.desbloqueado=False #indica si esta desbloqueado el celular
+        self.encendido = False 
+        self.desbloqueado=False 
         self.codigo=None
         self.red_movil=False
-
+        self.disponible = True
+        self.llamada_actual = None
+        self.almacenamiento_ocupado=0
 
         # se da de alta automaticamente al crear el celular
         self.central.alta_dispositivo(self)
 
-        # Se encuentra disponible para la llamada
-        self.disponible = True
-
-        # Contiene el numero con el cual se esta en llamada
-        self.llamada_actual = None
-        
-        #aca se crea esta instancia para trabajar con las apps y su almacenamiento
-        self.almacenamiento_ocupado=0
-
-        #primero se inicializa la app de contactos
         contactos = Contactos(self)
-        
-        
-        #creamos un diccionario para reflejar cada aplicacion y poder identificarla por su nombre
-        #la app contactos ya fue creada para poder ser pasada como argumento
         self.apps={"contactos": contactos,
                    "sms": SMS(self, contactos), 
                    "email": AppEmail(self),
                    "telefono": Telefono(self, contactos),
-                   'app store': App_Store(self), #accede al celular para modificar las apps dentro
-                    'configuracion': Configuracion(self) #accede a toda la configuracion del celular
+                   'app store': App_Store(self), 
+                    'configuracion': Configuracion(self) 
                    }
         
-        # se agrega a la lista de celulares registrados para poder acceder a ellos desde el menu principal
         Celular.celulares_registrados.append(self)
     
     def encender_apagar(self):
@@ -162,7 +138,7 @@ class Celular:
             self.red_movil = False
             self.desbloqueado = False
             if self.llamada_actual is not None:
-                self.apps['telefono'].terminar_llamada() # Se termina la llamada en curso en el caso de existir
+                self.apps['telefono'].terminar_llamada()
             print("\nHas apagado el celular")
 
     def menu_celular(self):
@@ -232,9 +208,6 @@ Ingrese una opción: """)
         """
         Permite al usuario abrir una aplicación instalada en el celular.
         Muestra la lista de aplicaciones disponibles y permite seleccionar una.
-        
-        Raises:
-            Exception: Si hay un error al abrir la aplicación
         """
         print(f"\nAplicaciones disponibles: {', '.join(list(self.apps.keys()))}")
         
@@ -243,9 +216,7 @@ Ingrese una opción: """)
             self.apps[app_nombre].menu()
         else:
             print("\nAplicación no encontrada")
-
-
-    #agregar contrasenia    
+    
     def bloq_desbloq(self):
         """
         Maneja el bloqueo y desbloqueo del celular.
@@ -262,7 +233,6 @@ Ingrese una opción: """)
             print("\nEl celular se ha desbloqueado")
             return
         
-        # Si tiene código, pedimos que lo ingrese
         intentos = 3
         while intentos > 0:
             try:
@@ -281,12 +251,12 @@ Ingrese una opción: """)
                 print("\nEl código debe ser un número")
                 intentos -= 1
 
-    def validar_estado_emisor(self) -> bool:
+    def validar_estado_emisor(self):
         """
-        Valida si el celular puede enviar mensajes o realizar llamadas.
+        Valida si el celular puede emitir comunicaciones.
         
         Returns:
-            bool: True si el celular está habilitado para comunicarse, False en caso contrario
+            bool: True si el celular está habilitado para emitir comunicaciones, False en caso contrario
         """
         if not self.red_movil:
             print('Tu celular no puede enviar mensajes. Activa la red móvil.')
@@ -309,33 +279,26 @@ Ingrese una opción: """)
         SO: {self.sistema_operativo} v{self.version}
         RAM: {self.RAM}GB
         Almacenamiento: {self.almacenamiento}GB
-        Número: {self.num_telefonico}
-        Red móvil: {estado_red}
-        Datos móviles: {estado_datos}
+        Numero: {self.num_telefonico}
+        Red movil: {estado_red}
+        Datos moviles: {estado_datos}
         """
+    
     @classmethod
-    def generar_informe_csv(cls):
-        """Genera un archivo CSV con información básica de todos los celulares registrados"""
+    def generar_informe_txt(cls):
+        """Genera un archivo TXT con información detallada de todos los celulares instanciados"""
         try:
-            with open('informe_celulares.csv', 'w') as archivo:
-                # Escribir encabezados
-                archivo.write("Nombre,Numero,Red Movil\n")
-                
-                # Escribir datos de cada celular
+            with open('informe_celulares.txt', 'w') as archivo:
                 for celular in cls.celulares_registrados:
-                    estado_red = "Activada" if celular.red_movil else "Desactivada"
+                    archivo.write(celular.__str__())
+                    archivo.write("\n" + "-"*50 + "\n") 
                     
-                    linea = f"{celular.nombre},{celular.num_telefonico},{estado_red}\n"
-                    archivo.write(linea)
-                    
-            print("Informe generado exitosamente en 'informe_celulares.csv'")
+            print("Informe generado exitosamente en 'informe_celulares.txt'")
             
         except Exception as e:
             print(f"Error al generar el informe: {str(e)}")
     
         
-
-
 class Aplicacion:
     """
     Clase base para todas las aplicaciones del celular.
@@ -366,6 +329,7 @@ class Aplicacion:
     def obtener_nombre_contacto(self, numero):
         """
         Busca el nombre del contacto por su número.
+        Se utiliza para apps de mensajeria.
         
         Args:
             numero: Número telefónico a buscar
@@ -378,6 +342,7 @@ class Aplicacion:
                 return nombre
         return numero
 
+
 class Contactos(Aplicacion):
     """
     Aplicación para gestionar contactos del celular.
@@ -389,11 +354,17 @@ class Contactos(Aplicacion):
     def __init__(self, celular: Celular):
         super().__init__(celular)
         self.lista_de_contactos={}
-        self.almacenamiento=1 #ocupa 1 gb
+        self.almacenamiento=1
         celular.almacenamiento_ocupado +=self.almacenamiento
         self.necesaria = True
     
     def ver_contactos(self):
+        """
+        Muestra la lista de contactos guardados.
+        
+        Si no hay contactos guardados, muestra un mensaje indicándolo.
+        Si hay contactos, muestra el nombre y número de cada uno.
+        """
         if not self.lista_de_contactos:
             print("No hay contactos guardados")
         else:
@@ -402,12 +373,25 @@ class Contactos(Aplicacion):
                 print(f"{nombre}: {numero}")
 
     def agregar_contacto(self):
+        """
+        Permite agregar un nuevo contacto a la lista.
+        
+        Solicita al usuario ingresar un número telefónico y un nombre.
+        Valida que:
+        - El número contenga solo dígitos
+        - El número tenga exactamente 8 dígitos 
+        - El número no esté duplicado
+        - El nombre no esté duplicado (agrega sufijo si es necesario)
+        
+        Si el nombre ya existe, sugiere una alternativa agregando un número
+        entre paréntesis y consulta al usuario si acepta.
+        """
         while True:
             numero = input("Ingrese número: ")
             if not numero.isdigit():
                 print("El número debe contener solo dígitos")
             elif len(numero) != 8:
-                print("El n��mero debe tener 8 dígitos")
+                print("El numero debe tener 8 dígitos")
             elif numero in self.lista_de_contactos.values():
                 print("Este número ya existe en contactos")
             else:
@@ -415,28 +399,37 @@ class Contactos(Aplicacion):
         
         while True:
             nombre_base = input("Ingrese nombre: ")
-            nombre = nombre_base
-            contador = 1
             
-            # Si el nombre ya existe, agregar (1), (2), etc.
-            while nombre in self.lista_de_contactos:
-                nombre = f"{nombre_base}({contador})"
-                contador += 1
+            nombre = self.revisar_repeticiones_nombre(nombre_base)
             
-            # Preguntar si está de acuerdo con el nombre
             if nombre != nombre_base:
                 opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre}'? (si/no): ").lower()
-                if opcion == 'no':
-                    continue
+                if opcion != 'si' and opcion != 'no':
+                    print("Opción inválida")
+                elif opcion == 'no':
+                    print("Contacto no agregado. ")
+                    break
+                else:
+                    self.lista_de_contactos[nombre] = numero
+                    print(f"Contacto agregado: {nombre} - {numero}")
+                    break
             
-            self.lista_de_contactos[nombre] = numero
-            print(f"Contacto agregado: {nombre} - {numero}")
-            break
-
     def modificar_contacto(self):
         """
         Permite modificar el nombre o número de un contacto existente.
-        Valida que los nuevos datos no estén duplicados.
+        
+        Muestra la lista de contactos y solicita el nombre del contacto a modificar.
+        Permite elegir entre modificar el nombre o el número.
+        
+        Para modificar el nombre:
+        - Valida que el nuevo nombre no esté duplicado
+        - Si está duplicado, sugiere alternativa con sufijo numérico
+        - Consulta al usuario si acepta el nombre alternativo
+        
+        Para modificar el número:
+        - Valida que contenga solo dígitos
+        - Valida que tenga 8 dígitos exactos
+        - Valida que no esté duplicado en otros contactos
         """
         if not self.lista_de_contactos:
             print("No hay contactos guardados para modificar")
@@ -450,63 +443,59 @@ class Contactos(Aplicacion):
             return
             
         print(f"\nModificando contacto: {nombre} - {self.lista_de_contactos[nombre]}")
-        self._mostrar_menu_modificacion(nombre)
-
-    def _mostrar_menu_modificacion(self, nombre: str):
-        """
-        Método privado que maneja el menú de modificación de contactos.
         
-        Args:
-            nombre: Nombre del contacto a modificar
-        """
         opcion = input("¿Qué desea modificar?\n1. Nombre\n2. Número\nIngrese opción: ")
         
         if opcion == "1":
-            self._modificar_nombre_contacto(nombre)
+            while True:
+                nombre_base = input("Ingrese el nuevo nombre: ")
+                nombre = self.revisar_repeticiones_nombre(nombre_base)
+                
+                if nombre != nombre_base:
+                    opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre}'? (si/no): ").lower()
+                    if opcion != 'si' and opcion != 'no':
+                        print("Opción inválida")
+                    elif opcion == 'no':
+                        print("Contacto no modificado. ")
+                        break
+                
+                numero = self.lista_de_contactos[nombre]
+                del self.lista_de_contactos[nombre]
+                self.lista_de_contactos[nombre] = numero
+                print(f"Nombre modificado: {nombre} - {numero}")
+                break
+                    
         elif opcion == "2":
-            self._modificar_numero_contacto(nombre)
+            while True:
+                nuevo_numero = input("Ingrese el nuevo número: ")
+                if not nuevo_numero.isdigit():
+                    print("El número debe contener solo dígitos")
+                elif len(nuevo_numero) != 8:
+                    print("El número debe tener 8 dígitos")
+                elif nuevo_numero in self.lista_de_contactos.values():
+                    print("Este número ya existe en contactos")
+                else:
+                    self.lista_de_contactos[nombre] = nuevo_numero
+                    print(f"Número modificado: {nombre} - {nuevo_numero}")
+                    break
         else:
             print("Opción inválida")
 
-    def _modificar_nombre_contacto(self, nombre: str):
+    def revisar_repeticiones_nombre(self, nombre_base):
         """
-        Método privado que maneja la lógica de modificación del nombre de un contacto.
-        
-        Args:
-            nombre: Nombre del contacto a modificar
-        """
-        while True:
-            nuevo_nombre = input("Ingrese el nuevo nombre: ")
-            if nuevo_nombre in self.lista_de_contactos:
-                print("Ya existe un contacto con ese nombre")
-                if input("¿Desea intentar con otro nombre? (si/no): ").lower() != 'si':
-                    return
-            else:
-                numero = self.lista_de_contactos[nombre]
-                del self.lista_de_contactos[nombre]
-                self.lista_de_contactos[nuevo_nombre] = numero
-                print(f"Nombre modificado: {nuevo_nombre} - {numero}")
-                break
+        Revisa si un nombre ya existe en la lista de contactos y genera uno nuevo agregando un número entre paréntesis.
 
-    def _modificar_numero_contacto(self, nombre: str):
-        """
-        Método privado que maneja la lógica de modificación del número de un contacto.
-        
         Args:
-            nombre: Nombre del contacto a modificar
+            nombre_base (str): El nombre base a revisar
+
+        Returns:
+            str: El nombre modificado si había repetición, o el original si no había conflicto
         """
-        while True:
-            nuevo_numero = input("Ingrese el nuevo número: ")
-            if not nuevo_numero.isdigit():
-                print("El número debe contener solo dígitos")
-            elif len(nuevo_numero) != 8:
-                print("El número debe tener 8 dígitos")
-            elif nuevo_numero in self.lista_de_contactos.values():
-                print("Este número ya existe en contactos")
-            else:
-                self.lista_de_contactos[nombre] = nuevo_numero
-                print(f"Número modificado: {nombre} - {nuevo_numero}")
-                break
+        contador = 1
+        while nombre_base in self.lista_de_contactos:
+            nombre_base = f"{nombre_base}({contador})"
+            contador += 1
+        return nombre_base
 
     def menu(self):
         while True:
@@ -542,11 +531,11 @@ class SMS(Aplicacion):
     """
     def __init__(self, celular: Celular, contactos: Contactos):
         super().__init__(celular)
-        self.almacenamiento=1 #ocupa 1 gb
+        self.almacenamiento=1 
         celular.almacenamiento_ocupado+=self.almacenamiento
-        self.bandeja= ListaEnlazada() #lista enlazada 
+        self.bandeja= ListaEnlazada() 
         self.contactos=contactos
-        self.en_espera = deque() # COLA Mensajes que te llegaron cuando no tenias la red movil activa
+        self.en_espera = deque() # cola
         self.necesaria = True
 
     def enviar_mensaje(self):
@@ -578,6 +567,15 @@ class SMS(Aplicacion):
         self.bandeja.agregarInicio(Nodo(mensaje))
    
     def ver_bandeja(self):
+        """
+        Muestra todos los mensajes almacenados en la bandeja.
+        
+        Imprime cada mensaje numerado, mostrando el emisor/receptor y contenido.
+        Si la bandeja está vacía, muestra un mensaje indicándolo.
+        
+        Returns:
+            bool: True si hay mensajes, False si la bandeja está vacía
+        """
         if self.bandeja.esVacia():
             print("No hay mensajes en la bandeja")
             return False
@@ -594,6 +592,13 @@ class SMS(Aplicacion):
         return True
        
     def actualizar_bandeja(self):
+        """
+        Actualiza la bandeja de mensajes con los mensajes en espera.
+        
+        Verifica si hay mensajes nuevos en la cola de espera y los agrega
+        al inicio de la bandeja de mensajes. Muestra la cantidad de mensajes
+        nuevos si los hay.
+        """
         cantidad_mensajes = len(self.en_espera) 
         if cantidad_mensajes > 0:
             print(f'\nTenes {cantidad_mensajes} mensaje/s nuevos. Revisa tu bandeja. ')
@@ -626,17 +631,6 @@ class SMS(Aplicacion):
         else:
             print("Número de mensaje inválido")
    
-    def actualizar_bandeja(self):
-        cantidad_mensajes = len(self.en_espera) 
-        if cantidad_mensajes > 0:
-            print(f'\nTenes {cantidad_mensajes} mensaje/s nuevos')
-            while self.en_espera:
-                mensaje = self.en_espera.popleft()
-                print(mensaje)
-                self.bandeja.agregarInicio(Nodo(mensaje))
-        else:
-            print('\nNo hay mensajes nuevos.')
-
     def menu(self):
         while True:
             opcion = input("""
@@ -659,40 +653,54 @@ Ingrese una opción: """)
                 break
             else:
                 print("Opción inválida")
-   
+
+
 class Telefono(Aplicacion):
+    """
+    Aplicación para realizar y recibir llamadas telefónicas.
+    
+    Attributes:
+        historial_llamadas (deque): Cola que almacena el historial de llamadas
+        contactos (Contactos): Referencia a la aplicación de contactos
+    """
     def __init__(self, celular: Celular, contactos):
         super().__init__(celular)
-        self.almacenamiento=1 #ocupa 1 gb
+        self.almacenamiento=1 
         celular.almacenamiento_ocupado+=self.almacenamiento
         self.historial_llamadas=deque() #Pila para ver cual llega primero
         self.contactos=contactos
         self.necesaria = True
     
     def llamar(self):
+        """
+        Inicia una llamada telefónica a otro dispositivo.
+        
+        Muestra la lista de contactos y permite ingresar un número o nombre.
+        Si se ingresa un nombre, busca el número asociado en contactos.
+        Valida que el número tenga 8 dígitos.
+        No permite iniciar una llamada si ya hay una en curso.
+        
+        La llamada se realiza a través de la central telefónica.
+        """
         if self.celular.llamada_actual is None:
-            # Primero mostramos los contactos disponibles
+            
             self.contactos.ver_contactos()
             
-            # Pedimos el destinatario (puede ser un número directo o nombre de contacto)
             receptor = input("\nIngrese un numero o un nombre de contacto: ")
             
-            # Si el receptor está en las claves (nombres) de contactos, obtenemos su número
             if receptor in self.contactos.lista_de_contactos:
                 receptor = self.contactos.lista_de_contactos[receptor]
             else:
-                # Si no es un contacto, verificamos que sea un número válido
+                
                 if not receptor.isdigit() or len(receptor) != 8:
                     print("Número inválido. Debe contener 8 dígitos.")
                     return
             
-
             self.celular.central.comunicacion_telefonica(self.celular, receptor)
         else:
             print('\nYa tienes una llamada en curso.')
     
     def recibir_llamada(self, comunicacion: Comunicacion):
-
         """
         Maneja una llamada entrante.
         
@@ -704,11 +712,8 @@ class Telefono(Aplicacion):
         """
         
         if self.celular.disponible:
-            # Buscamos si el número que llama está en los contactos
             nombre_contacto = self.obtener_nombre_contacto(comunicacion.emisor.num_telefonico)
-    
-                    
-            # Mostramos el nombre si existe, sino el número
+            
             if nombre_contacto != comunicacion.emisor.num_telefonico:
                 eleccion = input(f'{nombre_contacto} te está llamando. ¿Desea aceptar la llamada? (si/no)')
             else:
@@ -720,23 +725,35 @@ class Telefono(Aplicacion):
                 return True
             else:
                 return False
-        # Se agrega al historial de llamadas como llamada perdida
         else:
             self.agregar_historial_llamadas(comunicacion)
             return False
 
     def terminar_llamada(self):
+        """
+        Termina una llamada telefónica.
+        
+        Si hay una llamada en curso, la termina a través de la central telefónica.
+        Muestra un mensaje indicando que la llamada ha finalizado.
+        """
         if not self.celular.disponible:
             self.celular.central.terminar_comunicacion_telefonica(self.celular.llamada_actual)
             print('Llamada finalizada. ')
         else:
             print('No hay una llamada en curso. ')
 
-    
     def ver_historial_llamadas(self):
         """
         Muestra el historial de llamadas ordenado cronológicamente.
         Las llamadas más recientes aparecen primero.
+
+        El historial muestra:
+        - Número secuencial de la llamada
+        - Tipo de llamada (ENTRANTE/SALIENTE) 
+        - Nombre del contacto o número telefónico del emisor/receptor
+        - Fecha y hora de inicio de la llamada
+
+        Si el historial está vacío, muestra un mensaje indicándolo.
         """
         if not self.historial_llamadas:
             print("No hay llamadas en el historial")
@@ -744,7 +761,6 @@ class Telefono(Aplicacion):
             
         print("\nHistorial de llamadas:")
         for i, llamada in enumerate(self.historial_llamadas, 1):
-            # True si el emisor de la llamada es este celular
             es_llamada_saliente = llamada.emisor == self.celular
             emisor = self.obtener_nombre_contacto(llamada.emisor.num_telefonico)
             receptor = self.obtener_nombre_contacto(llamada.receptor.num_telefonico)
@@ -755,6 +771,11 @@ class Telefono(Aplicacion):
                 print(f"{i}. [ENTRANTE] de: {emisor} - {llamada.fecha_inicio}")
 
     def agregar_historial_llamadas(self, comunicacion: Comunicacion):
+        """
+        Agrega una llamada al historial de llamadas.
+        
+        La llamada se agrega al principio de la cola para mantener el orden cronológico.
+        """
         self.historial_llamadas.appendleft(comunicacion)
 
     def menu(self):
@@ -794,17 +815,23 @@ class AppEmail(Aplicacion):
     
     def __init__(self, celular: Celular):
         super().__init__(celular)
-        self.almacenamiento=3 #ocupa 3gb
+        self.almacenamiento=3 
         celular.almacenamiento_ocupado+=self.almacenamiento
         self.mail = f"{celular.nombre.lower().replace(' ', '')}@gmail.com"
         celular.central_gmail.usuarios_registrados[self.mail]=celular
         self.bandeja= ListaEnlazada() #lista enlazada 
-        self.en_espera = deque() # Mensajes que te llegaron cuando no tenias la red movil activa
-        self.bandeja_enviados = deque()  # pila para los emails enviados
+        self.en_espera = deque() # cola
+        self.bandeja_enviados = deque()  # pila 
         self.necesaria = True
         self.casillas_bloqueadas=set()
 
     def actualizar_bandeja(self):
+        """
+        Actualiza la bandeja de entrada con los mensajes en espera.
+        
+        Si hay mensajes en la cola de espera, los muestra y los mueve a la bandeja de entrada.
+        Si no hay mensajes nuevos, muestra un mensaje indicándolo.
+        """
         cantidad_mensajes = len(self.en_espera)
         if cantidad_mensajes > 0:
             print(f'\nTenes {cantidad_mensajes} mensaje/s nuevos')
@@ -816,9 +843,24 @@ class AppEmail(Aplicacion):
             print('\nNo hay mensajes nuevos.')
             
     def recibir_mensaje(self, mensaje):
+        """
+        Recibe un mensaje y lo agrega a la bandeja de entrada.
+        
+        Args:
+            mensaje (Email): El mensaje de correo electrónico a recibir
+        """
         self.bandeja.agregarInicio(Nodo(mensaje))
         
     def ver_bandeja(self, mostrar_no_leidos=False):
+        """
+        Muestra los mensajes en la bandeja de entrada.
+        
+        Args:
+            mostrar_no_leidos (bool): Si es True, muestra solo mensajes no leídos. Por defecto False.
+            
+        Returns:
+            bool: True si hay mensajes para mostrar, False si la bandeja está vacía
+        """
         if self.bandeja.esVacia():
             print("No hay mensajes en la bandeja")
             return False
@@ -842,6 +884,17 @@ class AppEmail(Aplicacion):
         return True
 
     def enviar_mail(self):
+        """
+        Permite enviar un nuevo email a un destinatario.
+        
+        Verifica que los datos móviles estén activos antes de enviar.
+        Solicita al usuario ingresar:
+        - Email del destinatario
+        - Asunto del correo
+        - Cuerpo del mensaje
+        
+        Si el destinatario está bloqueado, no permite enviar el email.
+        """
         if not self.celular.datos_moviles:
             print("Error: Necesita activar los datos móviles para enviar emails")
             return
@@ -923,6 +976,7 @@ class AppEmail(Aplicacion):
     def desbloquear_casilla(self):
         """
         Permite desbloquear una casilla de correo previamente bloqueada.
+        Tambien permite desbloquear todas las casillas bloqueadas si se ingresa '.'
         
         Returns:
             bool: True si se desbloqueó exitosamente, False en caso contrario
@@ -954,6 +1008,9 @@ class AppEmail(Aplicacion):
         return False
 
     def ver_bandeja_enviados(self):
+        """
+        Muestra los emails enviados.
+        """
         if not self.bandeja_enviados:
             print("No hay emails enviados")
             return
@@ -962,7 +1019,6 @@ class AppEmail(Aplicacion):
         for email in self.bandeja_enviados:
             print(email.__str__(True))
 
-   
     def menu(self):
         while True:
             opcion = input(f"""
@@ -999,13 +1055,28 @@ Ingrese una opción: """)
 
 
 class App_Store(Aplicacion):
+    """
+    Aplicación para gestionar la instalación y eliminación de apps.
+    
+    Permite descargar nuevas aplicaciones y eliminar las existentes que no sean del sistema.
+    """
     def __init__(self, celular: Celular):
         super().__init__(celular)
-        self.almacenamiento= 2 #ocupa 2gb
-        celular.almacenamiento_ocupado+=self.almacenamiento
+        self.almacenamiento= 2
+        self.celular.almacenamiento_ocupado+=self.almacenamiento
         self.necesaria = True
         
     def descargar_app(self):
+        """
+        Permite descargar una nueva aplicación al celular.
+        
+        Verifica que:
+        - Los datos móviles estén activados
+        - La app no esté ya instalada 
+        - Haya suficiente espacio de almacenamiento
+        
+        La app descargada ocupará un espacio aleatorio entre 0 y 2 GB.
+        """
         if not self.celular.datos_moviles:
             print("Error: Necesita activar los datos móviles para descargar apps")
             return
@@ -1015,15 +1086,16 @@ class App_Store(Aplicacion):
             print("Esta aplicación ya está instalada")
             return
             
-        # Se crea un almacenamiento random  entre 0 y 2
-        almacenamiento_de_nueva_app=random.uniform(0,2)
-        #si pasa la verificacion este almacenamiento, se le pasa como atributo a la nueva app
-        if self.celular.apps['configuracion'].validar_almacenamiento(almacenamiento_de_nueva_app):
-            self.celular.apps[app] = Aplicacion(self.celular)
-            self.celular.apps[app].almacenamiento=almacenamiento_de_nueva_app #se le pasa como atributo el almacenamiento ya verificado
-            print(f"App '{app}' descargada exitosamente")
         
-
+        almacenamiento_de_nueva_app=random.uniform(0,2)
+        if self.celular.apps['configuracion'].validar_almacenamiento(almacenamiento_de_nueva_app):
+            self.celular.almacenamiento_ocupado += almacenamiento_de_nueva_app
+            self.celular.apps[app] = Aplicacion(self.celular)
+            self.celular.apps[app].almacenamiento=almacenamiento_de_nueva_app
+            print(f"App '{app}' descargada exitosamente")
+        else:
+            print("No hay espacio suficiente para descargar la app")
+        
     def borrar_app(self):
         """
         Permite borrar una aplicación no esencial y liberar su espacio.
@@ -1050,8 +1122,6 @@ class App_Store(Aplicacion):
         self.celular.almacenamiento_ocupado -= espacio_liberado
         print(f"App '{app}' borrada exitosamente. Se liberaron {espacio_liberado:.1f}GB")
         
-        
-    
     def menu(self):
         while True:
             opcion = input("""
@@ -1076,16 +1146,23 @@ Ingrese una opción: """)
     
 
 class Configuracion(Aplicacion):
+    """
+    Aplicación para configurar aspectos del sistema del celular.
+    
+    Permite gestionar configuraciones básicas como el código de desbloqueo,
+    la red móvil y otras opciones del sistema.
+
+    Attributes:
+        celular (Celular): Referencia al celular que contiene la aplicación
+    """
     def __init__(self, celular: Celular):
         super().__init__(celular)
-        self.almacenamiento=1.5 #ocupa gb
-        celular.almacenamiento+=self.almacenamiento
+        self.almacenamiento=1.5
+        self.celular.almacenamiento_ocupado+=self.almacenamiento
         self.necesaria = True
         
     def cambiar_codigo(self):
         """Cambia el código de desbloqueo del celular"""
-        
-        # Si no hay código previo, simplemente pide el nuevo
         if self.celular.codigo is None:
             while True:
                 try:
@@ -1096,7 +1173,6 @@ class Configuracion(Aplicacion):
                 except ValueError:
                     print("El código debe ser un número")
                 
-        # Si hay código previo, pide verificación
         if self.celular.codigo == int(input('Ingrese el código actual: ')):
             while True:
                 try:
@@ -1110,7 +1186,12 @@ class Configuracion(Aplicacion):
             print("Código incorrecto")
         
     def activar_red_movil(self):
-        #desactiva la red movil y manda la actualizacion a la central
+        """
+        Activa la red móvil del celular y actualiza la bandeja de SMS.
+        
+        Si la red ya está activada, muestra un mensaje.
+        Si el celular no está registrado en la central, muestra un error.
+        """
         if self.celular.red_movil:
             print('La red movil ya esta activada')
         else:   
@@ -1122,25 +1203,43 @@ class Configuracion(Aplicacion):
                 print('Tu celular no esta registrado en la central. No podes activar la red movil')
     
     def desactivar_red_movil(self):
+        """
+        Desactiva la red móvil del celular.
+        
+        Si hay una llamada activa, la termina antes de desactivar la red.
+        Establece el estado de red_movil en False y muestra un mensaje de confirmación.
+        """
         if self.celular.llamada_actual:
             self.celular.apps['telefono'].terminar_llamada()
         self.celular.red_movil = False
         print("Red móvil desactivada")
-        
-        
+          
     def toggle_disponibilidad(self):
+        """
+        Alterna el estado de disponibilidad del celular para recibir llamadas.
+        
+        Cambia el estado de disponible a no disponible o viceversa.
+        Muestra un mensaje indicando el nuevo estado.
+        """
         self.celular.disponible = not self.celular.disponible
         estado = "disponible" if self.celular.disponible else "no disponible"
         print(f"El celular ahora está {estado} para recibir llamadas")
 
     def toggle_datos_moviles(self):
+        """
+        Alterna el estado de los datos móviles del celular.
+        
+        Si la red móvil está desactivada, muestra un error.
+        De lo contrario, cambia el estado de datos_moviles a su opuesto.
+        Si se activan los datos, actualiza la bandeja de email.
+        Muestra un mensaje indicando el nuevo estado.
+        """
         if not self.celular.red_movil:
             print("Error: Primero debe activar la red móvil")
             return
             
         self.celular.datos_moviles = not self.celular.datos_moviles
         estado = "activados" if self.celular.datos_moviles else "desactivados"
-        #se actualiza la bandeja del mail cuando se prenden los datos
         if self.celular.datos_moviles:
             self.celular.apps['email'].actualizar_bandeja()
         print(f"Datos móviles {estado}")
@@ -1148,7 +1247,6 @@ class Configuracion(Aplicacion):
     def validar_almacenamiento(self, almacenamiento_requerido: float):
         """
         Valida si hay suficiente almacenamiento disponible para instalar una nueva aplicación.
-        El método actualiza el almacenamiento_ocupado del celular si hay espacio suficiente.
         Si no hay espacio suficiente, muestra un mensaje de error.
 
         Args:
@@ -1157,15 +1255,7 @@ class Configuracion(Aplicacion):
         Returns:
             bool: True si hay suficiente espacio disponible, False en caso contrario
         """
-        
-        
-        espacio_disponible = self.celular.almacenamiento - self.celular.almacenamiento_ocupado  
-        if espacio_disponible >= almacenamiento_requerido:
-            self.celular.almacenamiento_ocupado += almacenamiento_requerido
-            return True
-        else: 
-            print("No se puede descargar esta aplicacion debido a que ocupa mas del espacio que tiene disponible")
-            return False
+        return self.celular.almacenamiento - self.celular.almacenamiento_ocupado >= almacenamiento_requerido
 
     def menu(self):
         while True:

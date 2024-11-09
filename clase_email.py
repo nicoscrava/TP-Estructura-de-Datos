@@ -1,6 +1,17 @@
 from datetime import datetime
 
 class Email:
+    """
+    Clase que representa un correo electrónico.
+
+    Attributes:
+        emisor (str): Dirección de email del remitente
+        destinatario (str): Dirección de email del destinatario 
+        asunto (str): Asunto del correo
+        cuerpo (str): Contenido del mensaje
+        fecha (datetime): Fecha y hora de creación del email
+        leido (bool): Indica si el email fue leído por el destinatario
+    """
     def __init__(self, emisor, destinatario, asunto, cuerpo):
         self.emisor = emisor
         self.destinatario = destinatario
@@ -18,11 +29,33 @@ class Email:
     
 
 class CentralGmail:
+    """
+    Clase que representa la central de correo electrónico Gmail.
+    
+    Gestiona el envío y recepción de emails entre usuarios registrados.
+    
+    Attributes:
+        usuarios_registrados (dict): Diccionario que mapea direcciones de email a objetos Celular
+        registro_mails (list): Lista que almacena el historial de emails enviados
+    """
     def __init__(self):
         self.usuarios_registrados = {}
         self.registro_mails = [] 
         
-    def validar_usuario(self, emisor: str, receptor: str):
+    def validar_usuarios(self, emisor: str, receptor: str):
+        """
+        Valida que el emisor y receptor sean usuarios registrados y que el emisor no esté bloqueado.
+        
+        Args:
+            emisor (str): Dirección de email del remitente
+            receptor (str): Dirección de email del destinatario
+            
+        Returns:
+            bool: True si la validación es exitosa, False en caso contrario
+        """
+        if emisor not in self.usuarios_registrados:
+            print(f"La direccion de mail {emisor} no se encuentra registrada.")
+            return False
         if receptor not in self.usuarios_registrados:
             print(f"La direccion de mail {receptor} no se encuentra registrada.")
             return False  
@@ -34,19 +67,29 @@ class CentralGmail:
         return True
 
     def enviar_mail(self, mail: Email):
-        try:
-            if self.validar_usuario(mail.emisor, mail.destinatario):
-                receptor = self.usuarios_registrados[mail.destinatario]
-                emisor = self.usuarios_registrados[mail.emisor]
-                
-                if receptor.datos_moviles:
-                    receptor.apps["email"].recibir_mensaje(mail)
-                else:
-                    receptor.apps["email"].en_espera.append(mail)
-                
-                emisor.apps["email"].bandeja_enviados.append(mail)
-                self.registro_mails.append(mail)
-                return True
-        except Exception as e:
-            print(f"Error al enviar email: {str(e)}")
-            return False
+        """
+        Envía un email entre usuarios registrados.
+        
+        Args:
+            mail (Email): Objeto Email con los datos del correo a enviar
+            
+        Returns:
+            bool: True si el envío fue exitoso, False en caso contrario
+            
+        El email se agrega a la bandeja de entrada del receptor si tiene datos móviles,
+        sino se agrega a la cola de espera. También se agrega a la bandeja de enviados
+        del emisor y al registro histórico de la central.
+        """
+        if self.validar_usuarios(mail.emisor, mail.destinatario):
+            receptor = self.usuarios_registrados[mail.destinatario]
+            emisor = self.usuarios_registrados[mail.emisor]
+            
+            if receptor.datos_moviles:
+                receptor.apps["email"].recibir_mensaje(mail)
+            else:
+                receptor.apps["email"].en_espera.append(mail)
+            
+            emisor.apps["email"].bandeja_enviados.append(mail)
+            self.registro_mails.append(mail)
+            return True
+        return False
