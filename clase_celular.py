@@ -117,7 +117,8 @@ class Celular:
                    "email": AppEmail(self),
                    "telefono": Telefono(self, contactos),
                    'app store': App_Store(self), 
-                    'configuracion': Configuracion(self) 
+                    'configuracion': Configuracion(self), 
+                    'notas': Notas(self)
                    }
         
         Celular.celulares_registrados.append(self)
@@ -885,7 +886,7 @@ class AppEmail(Aplicacion):
             if not mostrar_no_leidos or not actual.dato.leido:
                 hay_mensajes = True
                 vista_emisor = actual.dato.emisor == self.mail
-                print(f"{contador}. {actual.dato.__str__(vista_emisor)}\nCuerpo: {actual.dato.cuerpo}\n")
+                print(f"{contador}. {actual.dato.__str__(vista_emisor)}\nCuerpo: {actual.dato.contenido[1]}\n")
                 actual.dato.leido = True
             actual = actual.siguiente
             contador += 1
@@ -963,8 +964,8 @@ class AppEmail(Aplicacion):
             nuevo_email = Email(
                 self.mail,
                 destinatario,
-                f"FWD: {email.asunto}",
-                f"---------- Email reenviado ----------\nDe: {email.emisor}\nPara: {email.destinatario}\nFecha original: {email.fecha}\n{email.cuerpo}"
+                f"FWD: {email.contenido[0]}",
+                f"---------- Email reenviado ----------\nDe: {email.emisor}\nPara: {email.destinatario}\nFecha original: {email.fecha}\n{email.contenido[1]}"
             )
                 
             if self.celular.central_gmail.enviar_mail(nuevo_email):
@@ -1309,6 +1310,164 @@ Ingrese una opción: """)
             elif opcion == "5":
                 self.toggle_datos_moviles()
             elif opcion == "6":
+                break
+            else:
+                print("Opción inválida")
+
+class Notas(Aplicacion):
+    """
+    Aplicación para gestionar notas usando una Lista Enlazada.
+    Las notas editadas se mueven al inicio de la lista.
+    """
+    def __init__(self, celular):
+        super().__init__(celular)
+        self.notas = ListaEnlazada() # Lista de notas
+        self.almacenamiento = 0.3
+        self.celular.almacenamiento_ocupado += self.almacenamiento 
+        self.necesaria = True
+        
+    def agregar_nota(self):
+        """Agrega una nueva nota al inicio de la lista"""
+        titulo = input("\nIngrese título de la nota: ").strip() 
+        contenido = input("Ingrese contenido de la nota: ").strip()
+        
+        if not titulo or not contenido:
+            print("\nEl título y contenido no pueden estar vacíos")
+            return
+            
+        # Crea una nota con el título y contenido ingresados en formato diccionario
+        nota = {"titulo": titulo, "contenido": contenido}
+        nuevo_nodo = Nodo(nota) # Crea un nodo con la nota
+        self.notas.agregarInicio(nuevo_nodo) # Agrega la nota al inicio de la lista
+        print("\nNota agregada exitosamente")
+        
+    def ver_notas(self):
+        """Muestra todas las notas almacenadas"""
+        if self.notas.esVacia():
+            print("\nNo hay notas guardadas")
+            return False
+            
+        print("\nNotas guardadas:")
+        actual = self.notas.inicio
+        i = 1
+        while actual:
+            nota = actual.dato
+            print(f"\n{i}. {nota['titulo']}")
+            # Muestra el contenido de la nota, limitado a 50 caracteres para que no se vea muy largo
+            print(f"   {nota['contenido'][:50]}...")
+            actual = actual.siguiente
+            i += 1
+        return True
+        
+    def editar_nota(self):
+        """Edita una nota existente y la mueve al inicio"""
+        if not self.ver_notas(): # Si no hay notas, muestra un mensaje y termina la función
+            print("\nNo hay notas guardadas")
+            return
+            
+        try:
+            # Solicita al usuario que ingrese el número de la nota a editar
+            opcion = int(input("\nIngrese el número de la nota a editar: "))
+            if opcion < 1 or opcion > self.notas.tamanio:
+                print("\nNúmero de nota inválido")
+                return
+                
+            nodo = self.notas.obtener_nodo(opcion - 1)
+            if nodo == "Posición inválida": # Si el nodo no existe, muestra un mensaje y termina la función
+                print("\nError al acceder a la nota")
+                return
+                
+            print(f"\nEditando nota: {nodo.dato['titulo']}")
+            print(f"Contenido actual:\n{nodo.dato['contenido']}\n")
+            
+            modo_edicion = input("¿Desea continuar escribiendo (c) o sobrescribir (s)? ").lower()
+            
+            if modo_edicion == 'c':
+                # Continuar escribiendo
+                nuevo_contenido = input("Ingrese el texto adicional: ").strip()
+                if nuevo_contenido:
+                    contenido_actualizado = f"{nodo.dato['contenido']}\n{nuevo_contenido}"
+                    nota_actualizada = {
+                        "titulo": nodo.dato['titulo'],
+                        "contenido": contenido_actualizado
+                    }
+                    self.notas.eliminarPosicion(opcion - 1)
+                    self.notas.agregarInicio(Nodo(nota_actualizada))
+                    print("\nNota actualizada y movida al inicio")
+                else:
+                    print("\nNota sin cambios")
+                    
+            elif modo_edicion == 's':
+                # Sobrescribir
+                nuevo_contenido = input("Ingrese nuevo contenido: ").strip()
+                if nuevo_contenido:
+                    nota_actualizada = {
+                        "titulo": nodo.dato['titulo'],
+                        "contenido": nuevo_contenido
+                    }
+                    self.notas.eliminarPosicion(opcion - 1)
+                    self.notas.agregarInicio(Nodo(nota_actualizada))
+                    print("\nNota editada y movida al inicio")
+                else:
+                    print("\nNota sin cambios")
+            else:
+                print("\nOpción inválida")
+            
+        except ValueError:
+            print("\nDebe ingresar un número válido")
+            
+    def imprimir_nota(self):
+        """Exporta una nota a un archivo txt"""
+        if not self.ver_notas():
+            return
+            
+        try:
+            opcion = int(input("\nIngrese el número de la nota a imprimir: "))
+            if opcion < 1 or opcion > self.notas.tamanio:
+                print("\nNúmero de nota inválido")
+                return
+                
+            nodo = self.notas.obtener_nodo(opcion - 1)
+            if nodo == "Posición inválida":
+                print("\nError al acceder a la nota")
+                return
+                
+            nota = nodo.dato
+            nombre_archivo = f"nota_{nota['titulo']}.txt"
+            
+            with open(nombre_archivo, 'w') as f:
+                f.write(f"Título: {nota['titulo']}\n\n")
+                f.write(nota['contenido'])
+                
+            print(f"\nNota exportada a {nombre_archivo}")
+            
+        except ValueError:
+            print("\nDebe ingresar un número válido")
+        except Exception as e:
+            print(f"\nError al exportar la nota: {str(e)}")
+            
+    def menu(self):
+        """Menú principal de la aplicación"""
+        while True:
+            opcion = input("""
+NOTAS
+1. Ver notas
+2. Agregar nota
+3. Editar nota
+4. Imprimir nota
+5. Volver
+
+Ingrese una opción: """)
+            
+            if opcion == "1":
+                self.ver_notas()
+            elif opcion == "2":
+                self.agregar_nota()
+            elif opcion == "3":
+                self.editar_nota()
+            elif opcion == "4":
+                self.imprimir_nota()
+            elif opcion == "5":
                 break
             else:
                 print("Opción inválida")

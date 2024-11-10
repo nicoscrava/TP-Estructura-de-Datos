@@ -21,10 +21,10 @@ def menu_principal():
                         identificacion=input("(8 caracteres) ID del celular: "),
                         nombre=input("(obligatorio) Nombre del celular: "),
                         modelo=input("Modelo: "),
-                        sistema_operativo=input("Sistema operativo: "),
+                        sistema_operativo=input("Sistema operativo (Android, iOS): "),
                         version=input("(X.Y.Z) Versión: "),
-                        RAM=input("RAM (GB): "),
-                        almacenamiento=input("Almacenamiento (GB): "),
+                        RAM=input("RAM (GB) (2, 4, 8, 16, 32): "),
+                        almacenamiento=input("Almacenamiento (GB) (32, 64, 128, 256, 512): "),
                         num_telefonico=input("(8 dígitos) Número telefónico: ")
                     )
                     print(f"Celular creado con número {nuevo_celular.num_telefonico}")
@@ -93,6 +93,10 @@ email2 = Email(
     "Segundo email", 
     "Nico te mando otro email para probar"
 )
+
+
+
+
 
 celutomi.central_gmail.enviar_mail(email1)
 celutomi.central_gmail.enviar_mail(email2)

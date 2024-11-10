@@ -7,25 +7,23 @@ class Email:
     Attributes:
         emisor (str): Dirección de email del remitente
         destinatario (str): Dirección de email del destinatario 
-        asunto (str): Asunto del correo
-        cuerpo (str): Contenido del mensaje
+        contenido (tuple): Tupla con (asunto, cuerpo) del email
         fecha (datetime): Fecha y hora de creación del email
         leido (bool): Indica si el email fue leído por el destinatario
     """
     def __init__(self, emisor, destinatario, asunto, cuerpo):
         self.emisor = emisor
         self.destinatario = destinatario
-        self.asunto = asunto
-        self.cuerpo = cuerpo
+        self.contenido = (asunto, cuerpo) # Tupla con (asunto, cuerpo) del email
         self.fecha = datetime.now()
         self.leido = False
         
     def __str__(self, vista_emisor=False):
         if not vista_emisor:
             estado = "No leído" if not self.leido else "Leído"
-            return f"[{estado}] De: {self.emisor} - Asunto: {self.asunto} - Fecha: {self.fecha}"
+            return f"[{estado}] De: {self.emisor} - Asunto: {self.contenido[0]} - Fecha: {self.fecha}"
         else:
-            return f"Para: {self.destinatario} - Asunto: {self.asunto} - Fecha: {self.fecha}"
+            return f"Para: {self.destinatario} - Asunto: {self.contenido[0]} - Fecha: {self.fecha}"
     
 
 class CentralGmail:
