@@ -6,7 +6,7 @@ from datetime import datetime  # Para manejar fechas
 data_dict = {}
 
 # Abrir y leer el archivo CSV
-with open('TP-Estructura-de-Datos/Play_Store_Data.csv', 'r', encoding='utf-8') as file:
+with open('Play_Store_Data.csv', 'r', encoding='utf-8') as file:
     csv_reader = csv.reader(file)  # Crear un lector CSV
     
     # Leer la primera fila que contiene los nombres de las columnas
