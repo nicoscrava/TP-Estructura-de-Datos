@@ -1,3 +1,4 @@
+# Clase Nodo para la lista enlazada
 class Nodo:
     def __init__(self,dato):
         self.dato = dato
@@ -6,7 +7,7 @@ class Nodo:
     def __str__(self):
         return f'{self.dato}'
     
-
+# Clase ListaEnlazada
 class ListaEnlazada():
     def __init__(self,inicio=None):
         self.inicio=inicio

@@ -1,5 +1,4 @@
 from clase_celular import Celular
-from clase_central import Central
 
 
 def menu_principal():
@@ -70,39 +69,19 @@ def menu_principal():
         except ValueError:
             print("Por favor, ingrese un número. ")
 
-celutomi=Celular("12345678",'tomas','c','Android','1','2','32','11111111')
-celunico=Celular("87654321",'nicolas','c','Android','2','4','64','22222222')
-celian=Celular("11223344",'ian','c','Android','2','16','128','33333333')
+"""
+Estas lineas sirven para probar el programa y no tener que ingresar manualmente los datos
+
+#Se crean celulares
+celutomi=Celular("12345678",'tomas','c','ios','1.0','16','128','11111111')
+celunico=Celular("87654321",'nicolas','c','Android','2.3.2','8','512','22222222')
+celuian=Celular("11223344",'ian','c','anDroid','2.3','32','256','33333333')
+
+
+#Se encienden
 celutomi.encender_apagar()
-celutomi.datos_moviles=True
-celunico.datos_moviles=True 
 celunico.encender_apagar()
-celian.encender_apagar()
-from clase_email import Email
-# Envío de emails de celutomi a celunico
-email1 = Email(
-    celutomi.apps['email'].mail,
-    celunico.apps['email'].mail, 
-    "Primer email",
-    "Hola Nico! Este es mi primer email"
-)
-
-email2 = Email(
-    celutomi.apps['email'].mail,
-    celunico.apps['email'].mail,
-    "Segundo email", 
-    "Nico te mando otro email para probar"
-)
-
-
-
-
-
-celutomi.central_gmail.enviar_mail(email1)
-celutomi.central_gmail.enviar_mail(email2)
-
-
-celutomi.apps['contactos'].lista_de_contactos["nicolas"] = "22222222"
-celunico.apps['contactos'].lista_de_contactos["tomi"] = "11111111"
+celuian.encender_apagar()
+"""
 
 menu_principal()

@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 class Comunicacion:
     """
-    Clase base para representar una comunicación entre dos dispositivos celulares.
+    Clase base para representar una comunicacion entre dos dispositivos celulares.
 
     Attributes:
         emisor (Celular): Dispositivo que inicia la comunicación

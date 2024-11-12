@@ -2,7 +2,7 @@ from datetime import datetime
 
 class Email:
     """
-    Clase que representa un correo electrónico.
+    Clase que representa un correo electronico.
 
     Attributes:
         emisor (str): Dirección de email del remitente

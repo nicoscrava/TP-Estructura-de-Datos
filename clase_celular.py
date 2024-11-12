@@ -987,7 +987,11 @@ class AppEmail(Aplicacion):
         while True:
             casilla = input("ingrese la casilla que desea bloquear (No podra interactuar al estar bloqueada): ")
             try:
-                if casilla in self.celular.central_gmail.usuarios_registrados:
+                if casilla == self.mail:
+                    print('No te podes bloquear a vos mismo. ')
+                elif casilla in self.casillas_bloqueadas:
+                    print('Esta casilla ya esta bloqueada. ')
+                elif casilla in self.celular.central_gmail.usuarios_registrados:
                     self.casillas_bloqueadas.add(casilla)
                     print(f"Casilla {casilla} bloqueada exitosamente")
                 else:
@@ -1362,7 +1366,6 @@ class Notas(Aplicacion):
     def editar_nota(self):
         """Edita una nota existente y la mueve al inicio"""
         if not self.ver_notas(): # Si no hay notas, muestra un mensaje y termina la función
-            print("\nNo hay notas guardadas")
             return
             
         try:
