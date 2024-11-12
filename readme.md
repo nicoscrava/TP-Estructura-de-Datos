@@ -4,3 +4,5 @@ Abajo de todo estan comentadas dos lineas de codigo que pueden ser utiles para i
 
 
 Para ver los graficos ejecturar el archivo graficos.py
+
+El informe del trabajo esta en el repo
