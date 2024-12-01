@@ -282,7 +282,8 @@ class Central:
         Muestra y gestiona el menú de administración de la central.
         Permite ver dispositivos, generar informes y dar de baja dispositivos.
         """
-        while True:
+        menu_admina=True
+        while menu_admina:
             opcion = input("""
             MENU ADMINISTRADOR
             1. Ver dispositivos registrados
@@ -299,6 +300,6 @@ class Central:
             elif opcion == "3":
                 self.dar_baja_dispositivo()
             elif opcion == "4":
-                break
+                menu_admina=False
             else:
                 print("Opción inválida")

@@ -39,13 +39,17 @@ for rating in content_ratings:
     installs = [data_dict['Installs'][i] for i in indices]
     installs_num = [convert_installs(x) for x in installs]
     avg = sum(installs_num) / len(installs_num) if installs_num else 0
-    avg_installs.append(avg / 1_000_000)
+    avg_installs.append((rating, avg / 1_000_000))  # Guardar también la clasificación
+
+# Obtener las dos clasificaciones con mayor promedio de instalaciones
+top_2_content_ratings = sorted(avg_installs, key=lambda x: x[1], reverse=True)[:2]
+top_2_ratings = [x[0] for x in top_2_content_ratings]
 
 # Gráfico de instalaciones por clasificación
 plt.figure(figsize=(10, 6))
-plt.bar(content_ratings, avg_installs)
+plt.bar(content_ratings, [x[1] for x in avg_installs])  # Usar solo los promedios
 plt.xticks(rotation=45)
-plt.yticks(np.arange(0, max(avg_installs)+5, 5))
+plt.yticks(np.arange(0, max(avg_installs, key=lambda x: x[1])[1]+5, 5))
 plt.xlabel('Clasificación de Contenido')
 plt.ylabel('Promedio de Instalaciones (Millones)')
 plt.title('Promedio de Instalaciones por Clasificación de Contenido')
@@ -53,25 +57,27 @@ plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x)
 plt.tight_layout()
 plt.show()
 
-# Procesamiento de ratings - filtrar valores inválidos
-ratings = []
-for rating in data_dict['Rating']:
-    try:
-        rating_num = float(rating)
-        if 0 <= rating_num <= 5:
-            ratings.append(rating_num)
-    except (ValueError, TypeError):
-        continue
+# Filtrar ratings para las dos clasificaciones principales
+ratings_filtered = {top_2_ratings[0]: [], top_2_ratings[1]: []}  # Usar un diccionario para almacenar ratings por categoría
+for i in range(len(data_dict['Content Rating'])):
+    if data_dict['Content Rating'][i] in top_2_ratings:
+        try:
+            rating_num = float(data_dict['Rating'][i])
+            if 0 <= rating_num <= 5:
+                ratings_filtered[data_dict['Content Rating'][i]].append(rating_num)
+        except (ValueError, TypeError):
+            continue
 
-# Histograma de ratings
+# Histograma de ratings filtrados
 plt.figure(figsize=(12, 7))
-plt.hist(ratings, bins=10, range=(0, 5),
-         color='skyblue',
-         edgecolor='black',
-         alpha=0.7,
-         rwidth=0.9)
 
-plt.title('Distribución de Calificaciones en Google Play Store', 
+# Graficar cada categoría por separado usando histtype='barstacked'
+plt.hist([ratings_filtered[top_2_ratings[0]], ratings_filtered[top_2_ratings[1]]], 
+         bins=10, range=(0, 5),
+         alpha=0.7, label=top_2_ratings, 
+         edgecolor='black', rwidth=0.9, histtype='barstacked')
+
+plt.title('Distribución de Calificaciones en las 2 Clasificaciones Principales', 
           pad=20, fontsize=14, fontweight='bold')
 plt.xlabel('Calificación', fontsize=12)
 plt.ylabel('Cantidad de Apps', fontsize=12)
@@ -80,12 +86,13 @@ plt.xticks(np.arange(0, 5.5, 0.5), fontsize=10)
 plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
 
 # Info adicional en el gráfico
-total_apps = len(ratings)
-plt.text(0.95, 0.95, f'Total de Apps: {total_apps:,}', 
+total_apps_filtered = sum(len(ratings) for ratings in ratings_filtered.values())
+plt.text(0.95, 0.95, f'Total de Apps: {total_apps_filtered:,}', 
          transform=plt.gca().transAxes, 
          ha='right', 
          bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
 
+plt.legend(title='Clasificación de Contenido')  # Agregar leyenda
 plt.tight_layout()
 plt.show()
 
@@ -145,7 +152,7 @@ gs = plt.GridSpec(1, 3, figure=fig)
 # Gráfico principal - Top 6
 ax1 = fig.add_subplot(gs[0, :2])
 ax1.pie(sizes, labels=labels, autopct='%1.1f%%', 
-        startangle=90, shadow=True)
+        startangle=90)
 ax1.set_title('Distribución de las 6 Categorías más Comunes en Play Store', 
               pad=20, fontsize=14, fontweight='bold')
 
@@ -173,7 +180,7 @@ if grouped_others['Otros (<4%)'] > 0:
 # Gráfico secundario - Desglose
 ax2 = fig.add_subplot(gs[0, 2])
 ax2.pie(filtered_sizes, labels=filtered_labels, autopct='%1.1f%%', 
-        startangle=90, shadow=True)
+        startangle=90)
 ax2.set_title('Desglose de "Otros"', 
               pad=20, fontsize=12, fontweight='bold')
 
@@ -230,3 +237,67 @@ plt.text(0.95, 0.95, f'Total de Apps: {total_apps:,}',
 
 plt.tight_layout()
 plt.show()
+
+# Filtrar aplicaciones con precio mayor a 0
+prices = []
+ratings = []
+
+for i in range(len(data_dict['App'])):
+    try:
+        price_str = data_dict['Price'][i]
+        if price_str.startswith('$'):
+            price = float(price_str.replace('$', ''))
+            if price > 0:
+                rating = float(data_dict['Rating'][i])
+                if 0 <= rating <= 5:
+                    prices.append(price)
+                    ratings.append(rating)
+    except (ValueError, TypeError):
+        continue
+
+# Gráfico de precios vs ratings
+plt.figure(figsize=(12, 8))
+plt.scatter(prices, ratings, alpha=0.5, color='skyblue', marker='o', s=50)
+plt.title('Precio vs. Rating de Aplicaciones', pad=20, fontsize=14, fontweight='bold')
+plt.xlabel('Precio ($)', fontsize=12)
+plt.ylabel('Rating', fontsize=12)
+plt.ylim(1, 5.2)
+
+# Configuración del eje X
+plt.xlim(0, 22)  # Ajustar el límite del eje X
+xticks = list(range(0, 21, 2)) 
+plt.xticks(xticks)
+
+plt.grid(True, alpha=0.3, linestyle='--')
+
+total_apps = len(prices)
+plt.text(0.95, 0.95, f'Total de Apps: {total_apps:,}', 
+         transform=plt.gca().transAxes, 
+         ha='right', 
+         bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
+
+plt.tight_layout()
+plt.show()
+
+# Filtrar aplicaciones con precio mayor o igual a 400
+expensive_apps = []
+
+for i in range(len(data_dict['App'])):
+    try:
+        price_str = data_dict['Price'][i]
+        if price_str.startswith('$'):
+            price = float(price_str.replace('$', ''))
+            if price >= 400:
+                app_info = {
+                    'App': data_dict['App'][i],
+                    'Price': price_str,
+                    'Rating': data_dict['Rating'][i],
+                    'Category': data_dict['Category'][i]
+                }
+                expensive_apps.append(app_info)
+    except (ValueError, TypeError):
+        continue
+
+# Mostrar aplicaciones caras
+for app in expensive_apps:
+    print(f"App: {app['App']}, Price: {app['Price']}, Rating: {app['Rating']}, Category: {app['Category']}")

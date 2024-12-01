@@ -1,22 +1,23 @@
-from clase_celular import Celular
+from clase_celular import Dispositivo, Celular, Tablet, Celular_Nuevo, Celular_Viejo
 
 
 def menu_principal():
-
-    while True:
+    menu_principal=True
+    while menu_principal:
         try:
             opcion = int(input("""
             MENU PRINCIPAL
-            1. Crear nuevo celular
-            2. Usar celular existente
+            1. Crear nuevo dispositivo
+            2. Usar dispositivo existente
             3. Administrar central
-            4. Generar informe de celulares
+            4. Generar informe de dispositivos
             5. Salir
             Ingrese una opción: """))
         
             if opcion == 1:
-                try:
-                    nuevo_celular = Celular(
+                dispositivo = input("¿Qué tipo de dispositivo desea crear? (celular, tablet): ").strip().lower()
+                if dispositivo == "celular":
+                    try:
                         identificacion=input("(8 caracteres) ID del celular: "),
                         nombre=input("(obligatorio) Nombre del celular: "),
                         modelo=input("Modelo: "),
@@ -25,26 +26,49 @@ def menu_principal():
                         RAM=input("RAM (GB) (2, 4, 8, 16, 32): "),
                         almacenamiento=input("Almacenamiento (GB) (32, 64, 128, 256, 512): "),
                         num_telefonico=input("(8 dígitos) Número telefónico: ")
-                    )
-                    print(f"Celular creado con número {nuevo_celular.num_telefonico}")
+                        if version.split('.')[0] != '1':
+                            nuevo_dispositivo = Celular_Nuevo(identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico)
+                        else:
+                            nuevo_dispositivo = Celular_Viejo(identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico)
+                        print(f"Celular creado con número {nuevo_dispositivo.num_telefonico}")
                     
-                except ValueError as e:
-                    print(f"No se pudo crear el celular: {str(e)}")
+                    except ValueError as e:
+                        print(f"No se pudo crear el celular: {str(e)}")
+                elif dispositivo == "tablet":
+                    try:
+                        nueva_tablet = Tablet(
+                            identificacion=input("(8 caracteres) ID de la tablet: "),
+                            nombre=input("(obligatorio) Nombre de la tablet: "),
+                            modelo=input("Modelo: "),
+                            sistema_operativo=input("Sistema operativo (Android, iOS): "),
+                            version=input("(X.Y.Z) Versión: "),
+                            RAM=input("RAM (GB) (2, 4, 8, 16, 32): "),
+                            almacenamiento=input("Almacenamiento (GB) (32, 64, 128, 256, 512): ")
+                        )
+                        print(f"Tablet creada con nombre {nueva_tablet.nombre}")
+                    
+                    except ValueError as e:
+                        print(f"No se pudo crear la tablet: {str(e)}")
+                else:
+                    print('Ingreso invalido. ')
                 
                 
             elif opcion == 2:
-                if not Celular.celulares_registrados:
-                    print("No hay celulares creados todavía")
+                if not Dispositivo.dispositivos_instanciados:
+                    print("No hay dispositivos creados todavía")
                     continue
                 else:
                     try:
-                        print("\nCelulares disponibles:")
-                        for i, cel in enumerate(Celular.celulares_registrados, start=1):
-                            print(f"{i}. {cel.nombre} - Número: {cel.num_telefonico}")
+                        print("\Dispositivos disponibles:")
+                        for i, disp in enumerate(Dispositivo.dispositivos_instanciados, start=1):
+                            if isinstance(disp, Celular):
+                                print(f"{i}. Celular: {disp.nombre} - Número: {disp.num_telefonico}")
+                            else:
+                                print(f"{i}. Tablet: {disp.nombre} - ID: {disp.identificacion}")
                         
-                        seleccion = int(input("\nSeleccione el número de celular que desea usar: "))
-                        if 1 <= seleccion <= len(Celular.celulares_registrados):
-                            Celular.celulares_registrados[seleccion-1].menu_celular()
+                        seleccion = int(input("\nSeleccione el número de dispoitivo que desea usar: "))
+                        if 1 <= seleccion <= len(Dispositivo.dispositivos_instanciados):
+                            Dispositivo.dispositivos_instanciados[seleccion-1].menu_dispositivo()
                         else:
                             print("Selección inválida. Por favor, elija un número de la lista.")
                         
@@ -58,11 +82,11 @@ def menu_principal():
                     print(f"Error en el menú de administración: {str(e)}")
             
             elif opcion == 4:
-                Celular.generar_informe_txt()
+                Dispositivo.generar_informe_txt()
 
             elif opcion == 5:
                 print("¡Hasta luego!")
-                break
+                menu_principal=False
                 
             else:
                 print("Opción inválida. Por favor, seleccione una opción del menú.")
