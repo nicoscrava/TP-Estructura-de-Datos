@@ -18,22 +18,25 @@ def menu_principal():
                 dispositivo = input("¿Qué tipo de dispositivo desea crear? (celular, tablet): ").strip().lower()
                 if dispositivo == "celular":
                     try:
-                        identificacion=input("(8 caracteres) ID del celular: "),
-                        nombre=input("(obligatorio) Nombre del celular: "),
-                        modelo=input("Modelo: "),
-                        sistema_operativo=input("Sistema operativo (Android, iOS): "),
-                        version=input("(X.Y.Z) Versión: "),
-                        RAM=input("RAM (GB) (2, 4, 8, 16, 32): "),
-                        almacenamiento=input("Almacenamiento (GB) (32, 64, 128, 256, 512): "),
+                        identificacion=input("(8 caracteres) ID del celular: ")
+                        nombre=input("(obligatorio) Nombre del celular: ")
+                        modelo=input("Modelo: ")
+                        sistema_operativo=input("Sistema operativo (Android, iOS): ")
+                        version=input("(0.Y.Z)---> Celular Viejo \n(X.Y.Z)---> Celular Nuevo \nVersión: ")
+                        RAM=input("RAM (GB) (2, 4, 8, 16, 32): ")
+                        almacenamiento=input("Almacenamiento (GB) (32, 64, 128, 256, 512): ")
                         num_telefonico=input("(8 dígitos) Número telefónico: ")
-                        if version.split('.')[0] != '1':
+                        
+                        if str(version).split('.')[0] != '0':
                             nuevo_dispositivo = Celular_Nuevo(identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico)
+                            print(f"Celular nuevo creado con número {nuevo_dispositivo.num_telefonico}")
                         else:
                             nuevo_dispositivo = Celular_Viejo(identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico)
-                        print(f"Celular creado con número {nuevo_dispositivo.num_telefonico}")
+                            print(f"Celular viejo creado con número {nuevo_dispositivo.num_telefonico}")
                     
                     except ValueError as e:
                         print(f"No se pudo crear el celular: {str(e)}")
+                        
                 elif dispositivo == "tablet":
                     try:
                         nueva_tablet = Tablet(
@@ -59,7 +62,7 @@ def menu_principal():
                     continue
                 else:
                     try:
-                        print("\Dispositivos disponibles:")
+                        print("\nDispositivos disponibles:")
                         for i, disp in enumerate(Dispositivo.dispositivos_instanciados, start=1):
                             if isinstance(disp, Celular):
                                 print(f"{i}. Celular: {disp.nombre} - Número: {disp.num_telefonico}")
@@ -93,19 +96,19 @@ def menu_principal():
         except ValueError:
             print("Por favor, ingrese un número. ")
 
-"""
-Estas lineas sirven para probar el programa y no tener que ingresar manualmente los datos
 
-#Se crean celulares
-celutomi=Celular("12345678",'tomas','c','ios','1.0','16','128','11111111')
-celunico=Celular("87654321",'nicolas','c','Android','2.3.2','8','512','22222222')
-celuian=Celular("11223344",'ian','c','anDroid','2.3','32','256','33333333')
+# Estas lineas sirven para probar el programa y no tener que ingresar manualmente los datos
 
+# Se crean celulares
+celu_tomi=Celular_Nuevo("12345678",'tomas cel nuevo','c','ios','1.0','16','128','11111111')
+celu_nico=Celular_Viejo("87654321",'nicolas cel viejo','c','Android','0.3.2','8','512','22222222')
+#crea una tablet
+tablet_bicho=Tablet("00000000",'tablet bicho','c','iOS','1.22.12','8','128')
 
-#Se encienden
-celutomi.encender_apagar()
-celunico.encender_apagar()
-celuian.encender_apagar()
-"""
+# #Se encienden
+# celutomi.encender_apagar()
+# celunico.encender_apagar()
+# celuian.encender_apagar()
+# """
 
 menu_principal()

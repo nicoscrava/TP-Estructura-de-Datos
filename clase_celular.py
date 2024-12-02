@@ -103,39 +103,56 @@ class Dispositivo:
             print("\nAplicación no encontrada")
             
     def bloq_desbloq(self):
-        """
-        Maneja el bloqueo y desbloqueo del dispositivo.
-        Si tiene código configurado, solicita la verificación.
-        Permite hasta 3 intentos de desbloqueo.
-        """
+        """Maneja el bloqueo y desbloqueo del dispositivo"""
         if self.desbloqueado:
-            self.desbloqueado = False
-            print("\nHas bloqueado el dispositivo")
-            return
+            return self._bloquear_dispositivo()
         
         if self.codigo is None:
-            self.desbloqueado = True
-            print("\nEl dispositivo se ha desbloqueado")
-            return
+            return self._desbloquear_sin_codigo()
         
+        return self._desbloquear_con_codigo()
+
+    def _bloquear_dispositivo(self):
+        """Bloquea el dispositivo"""
+        self.desbloqueado = False
+        print("\nHas bloqueado el dispositivo")
+
+    def _desbloquear_sin_codigo(self):
+        """Desbloquea el dispositivo cuando no tiene código configurado"""
+        self.desbloqueado = True
+        print("\nEl dispositivo se ha desbloqueado")
+
+    def _desbloquear_con_codigo(self):
+        """Maneja el proceso de desbloqueo con código de seguridad"""
         intentos = 3
         while intentos > 0:
-            try:
-                codigo_ingresado = int(input('\nIngrese el código de desbloqueo: '))
-                if codigo_ingresado == self.codigo:
-                    self.desbloqueado = True
-                    print("\nEl dispositivo se ha desbloqueado")
-                    return
-                else:
-                    intentos -= 1
-                    if intentos > 0:
-                        print(f"\nCódigo incorrecto. Te quedan {intentos} intentos")
-                    else:
-                        print("\nDemasiados intentos fallidos. Vuelva a intentarlo.")
-            except ValueError:
-                print("\nEl código debe ser un número")
-                intentos -= 1
-        
+            if self._verificar_codigo_desbloqueo(intentos):
+                return True
+            intentos -= 1
+        return False
+
+    def _verificar_codigo_desbloqueo(self, intentos):
+        """Verifica si el código ingresado es correcto"""
+        try:
+            codigo_ingresado = int(input('\nIngrese el código de desbloqueo: '))
+            if codigo_ingresado == self.codigo:
+                self.desbloqueado = True
+                print("\nEl dispositivo se ha desbloqueado")
+                return True
+            else:
+                self._mostrar_mensaje_error_codigo(intentos - 1)
+                return False
+        except ValueError:
+            print("\nEl código debe ser un número")
+            return False
+
+    def _mostrar_mensaje_error_codigo(self, intentos):
+        """Muestra el mensaje de error correspondiente según los intentos restantes"""
+        if intentos > 0:
+            print(f"\nCódigo incorrecto. Te quedan {intentos} intentos")
+        else:
+            print("\nDemasiados intentos fallidos. Vuelva a intentarlo.")
+    
     def encender_apagar(self):
         """
         Alterna el estado de encendido/apagado del dispositivo.
@@ -167,46 +184,67 @@ class Dispositivo:
         Muestra el menú principal del dispositivo y maneja la navegación entre opciones.
         Permite encender/apagar el dispositivo, bloquear/desbloquear y acceder a aplicaciones.
         """
-        encendido = False
-        desbloqueado = False
-        while not encendido:
-                opcion = input("""
+        menu_activo = True
+        while menu_activo:
+            menu_activo = self._procesar_menu_segun_estado()
+
+    def _procesar_menu_segun_estado(self):
+        """Procesa el menú según el estado del dispositivo"""
+        if not self.encendido:
+            return self._mostrar_menu_apagado()
+        elif not self.desbloqueado:
+            return self._mostrar_menu_bloqueado()
+        else:
+            return self._mostrar_menu_desbloqueado()
+
+    def _mostrar_menu_apagado(self):
+        """Muestra y procesa el menú cuando el dispositivo está apagado"""
+        opcion = self._mostrar_opciones_apagado()
+        return self._procesar_opcion_apagado(opcion)
+
+    def _mostrar_opciones_apagado(self):
+        """Muestra las opciones disponibles en estado apagado"""
+        return input("""
 dispositivo APAGADO
 1. Encender dispositivo
 2. Volver al menú principal
 
 Ingrese una opción: """)
-                
-                if opcion == "1":
-                    self.encender_apagar()
-                    encendido=True
-                elif opcion == "2":
-                    return
-                else:
-                    print("Opción inválida")
-                
-        while not desbloqueado:
-                opcion = input("""
+
+    def _procesar_opcion_apagado(self, opcion):
+        """Procesa la opción seleccionada en estado apagado"""
+        if opcion == "1":
+            self.encender_apagar()
+            return True
+        elif opcion == "2":
+            return False
+        else:
+            print("Opción inválida")
+            return True
+
+    def _mostrar_menu_bloqueado(self):
+        """Muestra el menú cuando el dispositivo está bloqueado"""
+        opcion = input("""
 dispositivo BLOQUEADO
 1. Desbloquear dispositivo
 2. Apagar dispositivo
 3. Volver al menú principal
 
 Ingrese una opción: """)
-                
-                if opcion == "1":
-                    self.bloq_desbloq()
-                    desbloqueado=True
-                elif opcion == "2":
-                    self.encender_apagar() 
-                    return
-                elif opcion == "3":
-                    return
-                else:
-                    print("Opción inválida")
-                        
-        while desbloqueado:
-                opcion = input("""
+        
+        if opcion == "1":
+            self.bloq_desbloq()
+        elif opcion == "2":
+            self.encender_apagar()
+        elif opcion == "3":
+            return False
+        else:
+            print("Opción inválida")
+        return True
+
+    def _mostrar_menu_desbloqueado(self):
+        """Muestra el menú cuando el dispositivo está desbloqueado"""
+        opcion = input("""
 MENU dispositivo
 1. Abrir aplicación
 2. Bloquear dispositivo
@@ -214,20 +252,25 @@ MENU dispositivo
 4. Volver al menú principal
 
 Ingrese una opción: """)
-                
-                if opcion == "1":
-                    try:
-                        self.abrir_app()
-                    except Exception as e:
-                        print(f"Error al abrir la aplicación: {str(e)}")
-                elif opcion == "2":
-                    self.bloq_desbloq()
-                elif opcion == "3":
-                    self.encender_apagar()
-                elif opcion == "4":
-                    return
-                else:
-                    print("Opción inválida")
+        
+        if opcion == "1":
+            self._manejar_apertura_app()
+        elif opcion == "2":
+            self.bloq_desbloq()
+        elif opcion == "3":
+            self.encender_apagar()
+        elif opcion == "4":
+            return False
+        else:
+            print("Opción inválida")
+        return True
+
+    def _manejar_apertura_app(self):
+        """Maneja el proceso de abrir una aplicación"""
+        try:
+            self.abrir_app()
+        except Exception as e:
+            print(f"Error al abrir la aplicación: {str(e)}")
 
 
 class Tablet(Dispositivo):
@@ -293,6 +336,9 @@ class Celular(Dispositivo):
 
         
         Celular.dispositivos_instanciados.append(self)
+            
+        # se da de alta automaticamente al crear el celular
+        Celular.central.alta_dispositivo(self)
     
     def encender_apagar(self):
         """
@@ -345,7 +391,7 @@ class Celular_Viejo(Celular):
             ValueError: Si algún parámetro no cumple con los requisitos de formato o valor
         """
         super().__init__(identificacion, nombre, modelo, sistema_operativo, version, RAM, almacenamiento, num_telefonico)
-        self.apps['configuracion']=Configuracion_Celular_Viejo()
+        self.apps['configuracion']=Configuracion_Celular_Viejo(self)
     
     def __str__(self):
         estado_red = "Activada" if self.red_movil else "Desactivada"
@@ -377,7 +423,7 @@ class Celular_Nuevo(Celular):
         self.datos_moviles=False
     
         #solo el celular nuevo tiene estas apps
-        self.apps['configuracion']=Configuracion_Celular()
+        self.apps['configuracion']=Configuracion_Celular(self)
         self.apps["email"]= AppEmail(self)
         self.apps['app store']= App_Store(self)
         
@@ -449,7 +495,7 @@ class Contactos(Aplicacion):
         lista_de_contactos (dict): Diccionario que almacena nombre y número de contactos
     """
     
-    def __init__(self, dispositivo: dispositivo):
+    def __init__(self, dispositivo: Dispositivo):
         super().__init__(dispositivo)
         self.lista_de_contactos={}
         self.almacenamiento=1
@@ -473,123 +519,151 @@ class Contactos(Aplicacion):
     def agregar_contacto(self):
         """
         Permite agregar un nuevo contacto a la lista.
-        
-        Solicita al usuario ingresar un número telefónico y un nombre.
-        Valida que:
-        - El número contenga solo dígitos
-        - El número tenga exactamente 8 dígitos 
-        - El número no esté duplicado
-        - El nombre no esté duplicado (agrega sufijo si es necesario)
-        
-        Si el nombre ya existe, sugiere una alternativa agregando un número
-        entre paréntesis y consulta al usuario si acepta.
+        Solicita número y nombre, validando que cumplan con los requisitos.
         """
-        agrego_contacto=True
+        numero = self._obtener_numero_valido()
+        if not numero:  # Si el usuario canceló o hubo error
+            return
+            
+        nombre = self._obtener_nombre_valido()
+        if not nombre:  # Si el usuario canceló o hubo error
+            return
+            
+        self.lista_de_contactos[nombre] = numero
+        print(f"Contacto agregado: {nombre} - {numero}")
+
+    def _obtener_numero_valido(self):
+        """Solicita y valida el número de teléfono"""
+        agrego_contacto = True
         while agrego_contacto:
             numero = input("\nIngrese el número del contacto (8 dígitos) o 'cancelar' para volver: ").strip()
+            
             if numero.lower() == "cancelar":
                 print("\nOperación cancelada")
-                return
-            if not numero.isdigit():
-                print("El número debe contener solo dígitos")
-            elif len(numero) != 8:
-                print("El numero debe tener 8 dígitos")
-            elif numero in self.lista_de_contactos.values():
-                print("Este número ya existe en contactos")
-            elif numero==self.dispositivo.num_telefonico:
-                print("No puedes agregar un contacto con tu mismo número")
-            else:
-                agrego_contacto=False
-        
-        agrego_contacto_dos=True
-        while agrego_contacto_dos:
-            nombre_base = input("Ingrese nombre: ")
-            
-            nombre = self.revisar_repeticiones_nombre(nombre_base)
-            
-            if nombre != nombre_base:
-                opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre}'? (si/no): ").lower()
-                if opcion != 'si' and opcion != 'no':
-                    print("Opción inválida")
-                elif opcion == 'no':
-                    print("Contacto no agregado. ")
-                    agrego_contacto_dos=False
-            
-            self.lista_de_contactos[nombre] = numero
-            print(f"Contacto agregado: {nombre} - {numero}")
-            agrego_contacto_dos=False
-            
-    def modificar_contacto(self):
-        """
-        Permite modificar el nombre o número de un contacto existente.
-        
-        Muestra la lista de contactos y solicita el nombre del contacto a modificar.
-        Permite elegir entre modificar el nombre o el número.
-        
-        Para modificar el nombre:
-        - Valida que el nuevo nombre no esté duplicado
-        - Si está duplicado, sugiere alternativa con sufijo numérico
-        - Consulta al usuario si acepta el nombre alternativo
-        
-        Para modificar el número:
-        - Valida que contenga solo dígitos
-        - Valida que tenga 8 dígitos exactos
-        - Valida que no esté duplicado en otros contactos
-        """
-        if not self.lista_de_contactos:
-            print("No hay contactos guardados para modificar")
-            return
-            
-        self.ver_contactos()
-        nombre = input("\nIngrese el nombre del contacto a modificar: ")
-        
-        if nombre not in self.lista_de_contactos:
-            print("El contacto no existe")
-            return
-            
-        print(f"\nModificando contacto: {nombre} - {self.lista_de_contactos[nombre]}")
-        
-        opcion = input("¿Qué desea modificar?\n1. Nombre\n2. Número\nIngrese opción: ")
-        
-        if opcion == "1":
-            opcion_uno=True
-            while opcion_uno:
-                nombre_base = input("Ingrese el nuevo nombre: ")
+                return None
                 
-                if nombre_base in self.lista_de_contactos and nombre_base != nombre:
-                    nombre_nuevo = self.revisar_repeticiones_nombre(nombre_base)
-                    opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre_nuevo}'? (si/no): ").lower()
-                    if opcion != 'si' and opcion != 'no':
-                        print("Opción inválida")
-                        continue
-                    elif opcion == 'no':
-                        print("Contacto no modificado.")
-                        opcion_uno=False
-                    else:
-                        nombre_base = nombre_nuevo
-                
-                numero = self.lista_de_contactos[nombre]
-                del self.lista_de_contactos[nombre]
-                self.lista_de_contactos[nombre_base] = numero
-                print(f"Nombre modificado: {nombre_base} - {numero}")
-                opcion_uno=False
-                    
-        elif opcion == "2":
-            opcion_dos=True
-            while opcion_dos:
-                nuevo_numero = input("Ingrese el nuevo número: ")
-                if not nuevo_numero.isdigit():
-                    print("El número debe contener solo dígitos")
-                elif len(nuevo_numero) != 8:
-                    print("El número debe tener 8 dígitos")
-                elif nuevo_numero in self.lista_de_contactos.values() and nuevo_numero != self.lista_de_contactos[nombre]:
-                    print("Este número ya existe en contactos")
-                else:
-                    self.lista_de_contactos[nombre] = nuevo_numero
-                    print(f"Número modificado: {nombre} - {nuevo_numero}")
-                    opcion_dos=False
+            if self._validar_numero_nuevo_contacto(numero):
+                return numero
+    
+    def _validar_numero_nuevo_contacto(self, numero):
+        """Valida que el número cumpla con todos los requisitos"""
+        if not numero.isdigit():
+            print("El número debe contener solo dígitos")
+            return False
+            
+        if len(numero) != 8:
+            print("El numero debe tener 8 dígitos")
+            return False
+            
+        if numero in self.lista_de_contactos.values():
+            print("Este número ya existe en contactos")
+            return False
+            
+        if numero == self.dispositivo.num_telefonico:
+            print("No puedes agregar un contacto con tu mismo número")
+            return False
+            
+        return True
+
+    def _obtener_nombre_valido(self):
+        """Solicita y valida el nombre del contacto"""
+        nombre_base = input("Ingrese nombre: ")
+        nombre_sugerido = self.revisar_repeticiones_nombre(nombre_base)
+        
+        if nombre_sugerido != nombre_base:
+            return self._manejar_nombre_duplicado(nombre_base, nombre_sugerido)
+        
+        return nombre_sugerido
+
+    def _manejar_nombre_duplicado(self, nombre_base, nombre_sugerido):
+        """Maneja el caso de nombres duplicados"""
+        opcion = input(f"El nombre '{nombre_base}' ya existe. ¿Desea guardarlo como '{nombre_sugerido}'? (si/no): ").lower()
+        
+        if opcion == 'si':
+            return nombre_sugerido
+        elif opcion == 'no':
+            print("Contacto no agregado. ")
+            return None
         else:
             print("Opción inválida")
+            return None
+
+    def modificar_contacto(self):
+        if not self._verificar_contactos_existentes():
+            return
+            
+        nombre = self._obtener_contacto_a_modificar()
+        if not nombre:
+            return
+            
+        opcion = self._mostrar_opciones_modificacion()
+        if opcion == "1":
+            self._modificar_nombre_contacto(nombre)
+        elif opcion == "2":
+            self._modificar_numero_contacto(nombre)
+        else:
+            print("Opción inválida")
+
+    def _verificar_contactos_existentes(self):
+        """Verifica si hay contactos para modificar"""
+        if not self.lista_de_contactos:
+            print("No hay contactos guardados para modificar")
+            return False
+        self.ver_contactos()
+        return True
+
+    def _obtener_contacto_a_modificar(self):
+        """Solicita y valida el nombre del contacto a modificar"""
+        nombre = input("\nIngrese el nombre del contacto a modificar: ")
+        if nombre not in self.lista_de_contactos:
+            print("El contacto no existe")
+            return None
+        print(f"\nModificando contacto: {nombre} - {self.lista_de_contactos[nombre]}")
+        return nombre
+
+    def _mostrar_opciones_modificacion(self):
+        """Muestra las opciones de modificación disponibles"""
+        return input("¿Qué desea modificar?\n1. Nombre\n2. Número\nIngrese opción: ")
+
+    def _modificar_nombre_contacto(self, nombre_actual):
+        """Maneja la modificación del nombre de un contacto"""
+        while True:
+            nombre_nuevo = input("Ingrese el nuevo nombre: ")
+            if self._procesar_nuevo_nombre(nombre_actual, nombre_nuevo):
+                break
+
+    def _procesar_nuevo_nombre(self, nombre_actual, nombre_nuevo):
+        """Procesa y valida el nuevo nombre del contacto"""
+        if nombre_nuevo in self.lista_de_contactos and nombre_nuevo != nombre_actual:
+            return self._manejar_nombre_duplicado(nombre_actual, nombre_nuevo)
+        
+        numero = self.lista_de_contactos[nombre_actual]
+        del self.lista_de_contactos[nombre_actual]
+        self.lista_de_contactos[nombre_nuevo] = numero
+        print(f"Nombre modificado: {nombre_nuevo} - {numero}")
+        return True
+
+    def _modificar_numero_contacto(self, nombre):
+        """Maneja la modificación del número de un contacto"""
+        while True:
+            nuevo_numero = input("Ingrese el nuevo número: ")
+            if self._validar_nuevo_numero(nombre, nuevo_numero):
+                self.lista_de_contactos[nombre] = nuevo_numero
+                print(f"Número modificado: {nombre} - {nuevo_numero}")
+                break
+
+    def _validar_nuevo_numero(self, nombre, numero):
+        """Valida el nuevo número telefónico"""
+        if not numero.isdigit():
+            print("El número debe contener solo dígitos")
+            return False
+        if len(numero) != 8:
+            print("El número debe tener 8 dígitos")
+            return False
+        if numero in self.lista_de_contactos.values() and numero != self.lista_de_contactos[nombre]:
+            print("Este número ya existe en contactos")
+            return False
+        return True
 
     def revisar_repeticiones_nombre(self, nombre_base):
         """
@@ -641,7 +715,7 @@ class SMS(Aplicacion):
         contactos (Contactos): Referencia a la app de contactos
         en_espera (deque): Cola de mensajes recibidos cuando la red está inactiva
     """
-    def __init__(self, dispositivo: dispositivo, contactos: Contactos):
+    def __init__(self, dispositivo: Dispositivo, contactos: Contactos):
         super().__init__(dispositivo)
         self.almacenamiento=1 
         dispositivo.almacenamiento_ocupado+=self.almacenamiento
@@ -779,7 +853,7 @@ class Telefono(Aplicacion):
         historial_llamadas (deque): Cola que almacena el historial de llamadas
         contactos (Contactos): Referencia a la aplicación de contactos
     """
-    def __init__(self, dispositivo: dispositivo, contactos):
+    def __init__(self, dispositivo: Dispositivo, contactos):
         super().__init__(dispositivo)
         self.almacenamiento=1 
         dispositivo.almacenamiento_ocupado+=self.almacenamiento
@@ -931,7 +1005,7 @@ class AppEmail(Aplicacion):
         casillas_bloqueadas (set): Conjunto de direcciones bloqueadas
     """
     
-    def __init__(self, dispositivo: dispositivo):
+    def __init__(self, dispositivo: Dispositivo):
         super().__init__(dispositivo)
         self.almacenamiento=3 
         dispositivo.almacenamiento_ocupado+=self.almacenamiento
@@ -1201,7 +1275,7 @@ class App_Store(Aplicacion):
     
     Permite descargar nuevas aplicaciones y eliminar las existentes que no sean del sistema.
     """
-    def __init__(self, dispositivo: dispositivo):
+    def __init__(self, dispositivo: Dispositivo):
         super().__init__(dispositivo)
         self.almacenamiento= 2
         self.dispositivo.almacenamiento_ocupado+=self.almacenamiento
@@ -1585,57 +1659,82 @@ class Notas(Aplicacion):
         if not self.ver_notas(): # Si no hay notas, muestra un mensaje y termina la función
             return
             
+        nodo = self._obtener_nodo_a_editar()
+        if not nodo:
+            return
+            
+        self._mostrar_info_nota(nodo)
+        self._procesar_edicion_nota(nodo)
+
+    def _obtener_nodo_a_editar(self):
+        """Obtiene el nodo de la nota a editar"""
         try:
-            # Solicita al usuario que ingrese el número de la nota a editar
             opcion = int(input("\nIngrese el número de la nota a editar: "))
-            if opcion < 1 or opcion > self.notas.tamanio:
-                print("\nNúmero de nota inválido")
-                return
+            if not self._validar_numero_nota(opcion):
+                return None
                 
             nodo = self.notas.obtener_nodo(opcion - 1)
-            if nodo == "Posición inválida": # Si el nodo no existe, muestra un mensaje y termina la función
+            if nodo == "Posición inválida":
                 print("\nError al acceder a la nota")
-                return
+                return None
                 
-            print(f"\nEditando nota: {nodo.dato['titulo']}")
-            print(f"Contenido actual:\n{nodo.dato['contenido']}\n")
-            
-            modo_edicion = input("¿Desea continuar escribiendo (c) o sobrescribir (s)? ").lower()
-            
-            if modo_edicion == 'c':
-                # Continuar escribiendo
-                nuevo_contenido = input("Ingrese el texto adicional: ").strip()
-                if nuevo_contenido:
-                    contenido_actualizado = f"{nodo.dato['contenido']}\n{nuevo_contenido}"
-                    nota_actualizada = {
-                        "titulo": nodo.dato['titulo'],
-                        "contenido": contenido_actualizado
-                    }
-                    self.notas.eliminarPosicion(opcion - 1)
-                    self.notas.agregarInicio(Nodo(nota_actualizada))
-                    print("\nNota actualizada y movida al inicio")
-                else:
-                    print("\nNota sin cambios")
-                    
-            elif modo_edicion == 's':
-                # Sobrescribir
-                nuevo_contenido = input("Ingrese nuevo contenido: ").strip()
-                if nuevo_contenido:
-                    nota_actualizada = {
-                        "titulo": nodo.dato['titulo'],
-                        "contenido": nuevo_contenido
-                    }
-                    self.notas.eliminarPosicion(opcion - 1)
-                    self.notas.agregarInicio(Nodo(nota_actualizada))
-                    print("\nNota editada y movida al inicio")
-                else:
-                    print("\nNota sin cambios")
-            else:
-                print("\nOpción inválida")
+            return nodo, opcion
             
         except ValueError:
             print("\nDebe ingresar un número válido")
-            
+            return None
+
+    def _validar_numero_nota(self, opcion):
+        """Valida que el número de nota sea válido"""
+        if opcion < 1 or opcion > self.notas.tamanio:
+            print("\nNúmero de nota inválido")
+            return False
+        return True
+
+    def _mostrar_info_nota(self, nodo):
+        """Muestra la información actual de la nota"""
+        print(f"\nEditando nota: {nodo[0].dato['titulo']}")
+        print(f"Contenido actual:\n{nodo[0].dato['contenido']}\n")
+
+    def _procesar_edicion_nota(self, nodo):
+        """Procesa la edición de la nota según el modo elegido"""
+        modo_edicion = input("¿Desea continuar escribiendo (c) o sobrescribir (s)? ").lower()
+        
+        if modo_edicion == 'c':
+            self._continuar_escribiendo(nodo)
+        elif modo_edicion == 's':
+            self._sobrescribir_nota(nodo)
+        else:
+            print("\nOpción inválida")
+
+    def _continuar_escribiendo(self, nodo):
+        """Maneja el modo de continuar escribiendo"""
+        nuevo_contenido = input("Ingrese el texto adicional: ").strip()
+        if nuevo_contenido:
+            contenido_actualizado = f"{nodo[0].dato['contenido']}\n{nuevo_contenido}"
+            self._actualizar_nota(nodo, contenido_actualizado)
+            print("\nNota actualizada y movida al inicio")
+        else:
+            print("\nNota sin cambios")
+
+    def _sobrescribir_nota(self, nodo):
+        """Maneja el modo de sobrescribir"""
+        nuevo_contenido = input("Ingrese nuevo contenido: ").strip()
+        if nuevo_contenido:
+            self._actualizar_nota(nodo, nuevo_contenido)
+            print("\nNota editada y movida al inicio")
+        else:
+            print("\nNota sin cambios")
+
+    def _actualizar_nota(self, nodo, nuevo_contenido):
+        """Actualiza el contenido de la nota y la mueve al inicio"""
+        nota_actualizada = {
+            "titulo": nodo[0].dato['titulo'],
+            "contenido": nuevo_contenido
+        }
+        self.notas.eliminarPosicion(nodo[1] - 1)
+        self.notas.agregarInicio(Nodo(nota_actualizada))
+
     def imprimir_nota(self):
         """Exporta una nota a un archivo txt"""
         if not self.ver_notas():
