@@ -87,48 +87,104 @@ plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x)
 
 # Info adicional en el gráfico
 total_apps_filtered = sum(len(ratings) for ratings in ratings_filtered.values())
-plt.text(0.95, 0.95, f'Total de Apps: {total_apps_filtered:,}', 
-         transform=plt.gca().transAxes, 
-         ha='right', 
+apps_per_category = {cat: len(ratings) for cat, ratings in ratings_filtered.items()}
+
+info_text = (f'Total de Apps: {total_apps_filtered:,}\n'
+            f'{top_2_ratings[0]}: {apps_per_category[top_2_ratings[0]]:,}\n'
+            f'{top_2_ratings[1]}: {apps_per_category[top_2_ratings[1]]:,}')
+
+plt.text(0.95, 0.95, info_text,
+         transform=plt.gca().transAxes,
+         ha='right',
+         va='top',
          bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
 
-plt.legend(title='Clasificación de Contenido')  # Agregar leyenda
+plt.legend(title='Clasificación de Contenido')
 plt.tight_layout()
 plt.show()
 
-# TODO: Revisar si podemos optimizar el procesamiento de fechas
-dates = []
-for date_str in data_dict['Last Updated']:
+# Funciones de utilidad para procesamiento de datos
+def parse_date(date_str):
+    """Convierte string de fecha a objeto datetime"""
     try:
-        date = datetime.strptime(date_str, '%B %d, %Y')
-        if date.year >= 2013:  # Solo datos desde 2013 son relevantes
-            dates.append(date)
+        return datetime.strptime(date_str, '%B %d, %Y')
     except:
-        continue
+        return None
 
-# Análisis temporal de actualizaciones
-plt.figure(figsize=(15, 8))
-plt.hist(dates, bins=50, color='lightseagreen', 
-         edgecolor='black', alpha=0.7)
+def parse_rating(rating_str):
+    """Convierte string de rating a float"""
+    try:
+        rating = float(rating_str)
+        return rating if 0 <= rating <= 5 else None
+    except (ValueError, TypeError):
+        return None
 
-plt.title('Actualizaciones de Apps a lo Largo del Tiempo', 
-          pad=20, fontsize=14, fontweight='bold')
-plt.xlabel('Fecha de Actualización', fontsize=12)
-plt.ylabel('Número de Apps Actualizadas', fontsize=12)
-plt.xticks(rotation=45)
-plt.grid(True, alpha=0.3, linestyle='--')
-plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
+def get_valid_update_rating_pairs(data_dict):
+    """Obtiene pares válidos de fecha de actualización y rating"""
+    pairs = []
+    for i in range(len(data_dict['Last Updated'])):
+        date = parse_date(data_dict['Last Updated'][i])
+        rating = parse_rating(data_dict['Rating'][i])
+        
+        if date and rating and date.year >= 2013:
+            pairs.append((date, rating))
+    return pairs
 
-total_apps = len(dates)
-plt.text(0.95, 0.95, f'Total de Apps: {total_apps:,}', 
-         transform=plt.gca().transAxes,
-         bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
-         ha='right')
+def plot_updates_vs_ratings(update_rating_pairs):
+    """Genera gráfico de actualizaciones vs ratings"""
+    dates, ratings = zip(*update_rating_pairs)
+    
+    plt.figure(figsize=(15, 8))
+    
+    # Scatter plot con transparencia
+    plt.scatter(dates, ratings, 
+               alpha=0.5,
+               color='skyblue',
+               marker='o',
+               s=50)
+    
+    # Calcular y agregar línea de tendencia
+    dates_num = [d.timestamp() for d in dates]
+    z = np.polyfit(dates_num, ratings, 1)
+    p = np.poly1d(z)
+    plt.plot(dates, p(dates_num), "r--", alpha=0.8)
+    
+    # Configuración del gráfico
+    _configure_update_rating_plot(len(update_rating_pairs))
+    
+    plt.show()
 
-plt.tight_layout()
-plt.show()
+def _configure_update_rating_plot(total_apps):
+    """Configura detalles del gráfico de actualizaciones vs ratings"""
+    plt.title('Relación entre Fecha de Actualización y Rating', 
+              pad=20, fontsize=14, fontweight='bold')
+    plt.xlabel('Fecha de Última Actualización', fontsize=12)
+    plt.ylabel('Rating', fontsize=12)
+    plt.ylim(1, 5.2)
+    plt.grid(True, alpha=0.3, linestyle='--')
+    plt.xticks(rotation=45)
+    
+    # Agregar información sobre total de apps
+    plt.text(0.95, 0.95, 
+             f'Total de Apps: {total_apps:,}', 
+             transform=plt.gca().transAxes,
+             ha='right',
+             bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
+    
+    plt.tight_layout()
 
-# Análisis de categorías
+# Ejecución principal
+def main():
+    # Obtener datos válidos
+    update_rating_pairs = get_valid_update_rating_pairs(data_dict)
+    
+    # Generar gráfico
+    plot_updates_vs_ratings(update_rating_pairs)
+
+if __name__ == "__main__":
+    main()
+
+# An��lisis de categorías
 category_counts = {}
 for category in data_dict['Category']:
     if category not in category_counts:
@@ -238,9 +294,10 @@ plt.text(0.95, 0.95, f'Total de Apps: {total_apps:,}',
 plt.tight_layout()
 plt.show()
 
-# Filtrar aplicaciones con precio mayor a 0
+# Filtrar aplicaciones con precio mayor a 0 y segmentar por aplicaciones gratuitas y de pago
 prices = []
 ratings = []
+colors = []
 
 for i in range(len(data_dict['App'])):
     try:
@@ -252,15 +309,19 @@ for i in range(len(data_dict['App'])):
                 if 0 <= rating <= 5:
                     prices.append(price)
                     ratings.append(rating)
+                    if price == 0:
+                        colors.append('blue')  # Aplicaciones gratuitas
+                    else:
+                        colors.append('red')  # Aplicaciones de pago
     except (ValueError, TypeError):
         continue
 
-# Gráfico de precios vs ratings
+# Gráfico de precios vs calificaciones, segmentado por aplicaciones gratuitas y de pago
 plt.figure(figsize=(12, 8))
-plt.scatter(prices, ratings, alpha=0.5, color='skyblue', marker='o', s=50)
-plt.title('Precio vs. Rating de Aplicaciones', pad=20, fontsize=14, fontweight='bold')
+plt.scatter(prices, ratings, alpha=0.5, color=colors, marker='o', s=50)
+plt.title('Relación entre Precio y Calificación', pad=20, fontsize=14, fontweight='bold')
 plt.xlabel('Precio ($)', fontsize=12)
-plt.ylabel('Rating', fontsize=12)
+plt.ylabel('Calificación', fontsize=12)
 plt.ylim(1, 5.2)
 
 # Configuración del eje X
@@ -278,26 +339,3 @@ plt.text(0.95, 0.95, f'Total de Apps: {total_apps:,}',
 
 plt.tight_layout()
 plt.show()
-
-# Filtrar aplicaciones con precio mayor o igual a 400
-expensive_apps = []
-
-for i in range(len(data_dict['App'])):
-    try:
-        price_str = data_dict['Price'][i]
-        if price_str.startswith('$'):
-            price = float(price_str.replace('$', ''))
-            if price >= 400:
-                app_info = {
-                    'App': data_dict['App'][i],
-                    'Price': price_str,
-                    'Rating': data_dict['Rating'][i],
-                    'Category': data_dict['Category'][i]
-                }
-                expensive_apps.append(app_info)
-    except (ValueError, TypeError):
-        continue
-
-# Mostrar aplicaciones caras
-for app in expensive_apps:
-    print(f"App: {app['App']}, Price: {app['Price']}, Rating: {app['Rating']}, Category: {app['Category']}")
