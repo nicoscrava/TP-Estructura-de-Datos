@@ -1,36 +1,36 @@
-# Librerías base
+
 import csv
 from datetime import datetime
 
-# Dict para datos del CSV
+
 data_dict = {}
 
-# Lectura del CSV
+
 with open('Play_Store_Data.csv', 'r', encoding='utf-8') as file:
     csv_reader = csv.reader(file)
     headers = next(csv_reader)
     
-    # Inicializar listas vacías para cada columna
+
     for header in headers:
         data_dict[header] = []
     
-    # Poblar el diccionario
+
     for row in csv_reader:
         for i, value in enumerate(row):
             data_dict[headers[i]].append(value)
 
-# Librerías para gráficos
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Función helper para limpiar datos de instalaciones
+
 def convert_installs(install_str):
     if isinstance(install_str, str):
         install_str = install_str.replace(',', '').replace('+', '')
         return int(install_str) if install_str.isnumeric() else 0
     return 0
 
-# Análisis por clasificación de contenido
+
 content_ratings = sorted(list(set(data_dict['Content Rating']) - {'Unrated'}))
 avg_installs = []
 
@@ -39,15 +39,15 @@ for rating in content_ratings:
     installs = [data_dict['Installs'][i] for i in indices]
     installs_num = [convert_installs(x) for x in installs]
     avg = sum(installs_num) / len(installs_num) if installs_num else 0
-    avg_installs.append((rating, avg / 1_000_000))  # Guardar también la clasificación
+    avg_installs.append((rating, avg / 1_000_000)) 
 
-# Obtener las dos clasificaciones con mayor promedio de instalaciones
+
 top_2_content_ratings = sorted(avg_installs, key=lambda x: x[1], reverse=True)[:2]
 top_2_ratings = [x[0] for x in top_2_content_ratings]
 
-# Gráfico de instalaciones por clasificación
+
 plt.figure(figsize=(10, 6))
-plt.bar(content_ratings, [x[1] for x in avg_installs])  # Usar solo los promedios
+plt.bar(content_ratings, [x[1] for x in avg_installs])  
 plt.xticks(rotation=45)
 plt.yticks(np.arange(0, max(avg_installs, key=lambda x: x[1])[1]+5, 5))
 plt.xlabel('Clasificación de Contenido')
@@ -57,8 +57,8 @@ plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x)
 plt.tight_layout()
 plt.show()
 
-# Filtrar ratings para las dos clasificaciones principales
-ratings_filtered = {top_2_ratings[0]: [], top_2_ratings[1]: []}  # Usar un diccionario para almacenar ratings por categoría
+
+ratings_filtered = {top_2_ratings[0]: [], top_2_ratings[1]: []}  
 for i in range(len(data_dict['Content Rating'])):
     if data_dict['Content Rating'][i] in top_2_ratings:
         try:
@@ -68,10 +68,10 @@ for i in range(len(data_dict['Content Rating'])):
         except (ValueError, TypeError):
             continue
 
-# Histograma de ratings filtrados
+
 plt.figure(figsize=(12, 7))
 
-# Graficar cada categoría por separado usando histtype='barstacked'
+
 plt.hist([ratings_filtered[top_2_ratings[0]], ratings_filtered[top_2_ratings[1]]], 
          bins=10, range=(0, 5),
          alpha=0.7, label=top_2_ratings, 
@@ -85,7 +85,7 @@ plt.grid(True, alpha=0.3, linestyle='--')
 plt.xticks(np.arange(0, 5.5, 0.5), fontsize=10)
 plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
 
-# Info adicional en el gráfico
+
 total_apps_filtered = sum(len(ratings) for ratings in ratings_filtered.values())
 apps_per_category = {cat: len(ratings) for cat, ratings in ratings_filtered.items()}
 
@@ -103,7 +103,7 @@ plt.legend(title='Clasificación de Contenido')
 plt.tight_layout()
 plt.show()
 
-# Funciones de utilidad para procesamiento de datos
+
 def parse_date(date_str):
     """Convierte string de fecha a objeto datetime"""
     try:
@@ -136,20 +136,20 @@ def plot_updates_vs_ratings(update_rating_pairs):
     
     plt.figure(figsize=(15, 8))
     
-    # Scatter plot con transparencia
+
     plt.scatter(dates, ratings, 
                alpha=0.5,
                color='skyblue',
                marker='o',
                s=50)
     
-    # Calcular y agregar línea de tendencia
+
     dates_num = [d.timestamp() for d in dates]
     z = np.polyfit(dates_num, ratings, 1)
     p = np.poly1d(z)
     plt.plot(dates, p(dates_num), "r--", alpha=0.8)
     
-    # Configuración del gráfico
+
     _configure_update_rating_plot(len(update_rating_pairs))
     
     plt.show()
@@ -164,7 +164,7 @@ def _configure_update_rating_plot(total_apps):
     plt.grid(True, alpha=0.3, linestyle='--')
     plt.xticks(rotation=45)
     
-    # Agregar información sobre total de apps
+
     plt.text(0.95, 0.95, 
              f'Total de Apps: {total_apps:,}', 
              transform=plt.gca().transAxes,
@@ -173,50 +173,50 @@ def _configure_update_rating_plot(total_apps):
     
     plt.tight_layout()
 
-# Ejecución principal
+
 def main():
-    # Obtener datos válidos
+
     update_rating_pairs = get_valid_update_rating_pairs(data_dict)
     
-    # Generar gráfico
+
     plot_updates_vs_ratings(update_rating_pairs)
 
 if __name__ == "__main__":
     main()
 
-# An��lisis de categorías
+
 category_counts = {}
 for category in data_dict['Category']:
     if category not in category_counts:
         category_counts[category] = 0
     category_counts[category] += 1
 
-# Top 6 vs resto
+
 sorted_categories = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
 top_6_categories = sorted_categories[:6]
 other_categories = sorted_categories[6:]
 others_count = sum(count for category, count in other_categories)
 
-# Datos para gráfico principal
+
 labels = [category for category, count in top_6_categories] + ['Otros']
 sizes = [count for category, count in top_6_categories] + [others_count]
 
-# FIXME: Mejorar la distribución del espacio entre los gráficos
+
 fig = plt.figure(figsize=(18, 8))
 gs = plt.GridSpec(1, 3, figure=fig)
 
-# Gráfico principal - Top 6
+
 ax1 = fig.add_subplot(gs[0, :2])
 ax1.pie(sizes, labels=labels, autopct='%1.1f%%', 
         startangle=90)
 ax1.set_title('Distribución de las 6 Categorías más Comunes en Play Store', 
               pad=20, fontsize=14, fontweight='bold')
 
-# Desglose de "Otros"
+
 total_others = sum(count for _, count in other_categories)
 other_percentages = [(category, (count/total_others)*100) for category, count in other_categories]
 
-# Agrupar categorías menores
+
 grouped_others = {'Otros (<4%)': 0}
 filtered_others = []
 
@@ -233,7 +233,7 @@ if grouped_others['Otros (<4%)'] > 0:
     filtered_sizes.append(grouped_others['Otros (<4%)']/100 * total_others)
     filtered_labels.append('Otros (<4%)')
 
-# Gráfico secundario - Desglose
+
 ax2 = fig.add_subplot(gs[0, 2])
 ax2.pie(filtered_sizes, labels=filtered_labels, autopct='%1.1f%%', 
         startangle=90)
@@ -245,7 +245,7 @@ ax2.axis('equal')
 plt.tight_layout()
 plt.show()
 
-# Análisis de correlación ratings vs reviews
+
 ratings = []
 reviews = []
 
@@ -259,7 +259,7 @@ for i in range(len(data_dict['App'])):
     except (ValueError, TypeError):
         continue
 
-# Cálculo de tendencia
+
 log_reviews = np.log10(reviews)
 ratings_array = np.array(ratings)
 coefficients = np.polyfit(log_reviews, ratings_array, 1)
@@ -309,9 +309,9 @@ for i in range(len(data_dict['App'])):
                     prices.append(price)
                     ratings.append(rating)
                     if price == 0:
-                        colors.append('blue')  # Aplicaciones gratuitas
+                        colors.append('blue')  
                     else:
-                        colors.append('red')  # Aplicaciones de pago
+                        colors.append('red')  
     except (ValueError, TypeError):
         continue
 
@@ -381,7 +381,7 @@ plt.tight_layout()
 plt.show()
 
 
-# -------------- #
+
 
 
 rangos_instalaciones = ['<1K', '1K-10K', '10K-100K', '100K-1M', '>1M']
@@ -438,19 +438,19 @@ plt.tight_layout()
 
 plt.show()
 
-# -------- #
+
 
 import math
 
-# Estructuras de datos
+
 data = defaultdict(list)  
 categories = set()        
 
-# Leer y procesar el archivo CSV
+
 with open('Play_Store_Data.csv', 'r', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        if row['Type'] == 'Paid':  # Solo considerar apps pagas
+        if row['Type'] == 'Paid':  
             try:
                 category = row['Category']
                 rating = float(row['Rating']) if row['Rating'] else 0
@@ -487,7 +487,7 @@ for category in categories:
     ranking[category]['Install_Rank'] = sorted(installs).index(ranking[category]['Installs']) / len(installs)
     ranking[category]['Revenue_Rank'] = sorted(ingresos).index(ranking[category]['Revenue']) / len(ingresos)
     
-    # Score total ponderado
+
     ranking[category]['Total_Score'] = (
         ranking[category]['Rating_Rank'] * 0.2 +
         ranking[category]['Review_Rank'] * 0.3 +
@@ -497,8 +497,8 @@ for category in categories:
 
 top_categories = sorted(ranking.items(), key=lambda x: x[1]['Total_Score'], reverse=True)[:8]
 
-categories = [item[0] for item in top_categories]  # Extraer nombres de categorías
-scores = [item[1]['Total_Score'] for item in top_categories]  # Extraer scores de las categorías
+categories = [item[0] for item in top_categories]  
+scores = [item[1]['Total_Score'] for item in top_categories]  
 
 
 plt.figure(figsize=(12, 6))
@@ -508,39 +508,39 @@ for bar, score in zip(bars, scores):
     plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1, f'{score:.1f}', 
              ha='center', va='bottom', fontsize=10, color='black', weight='bold')
 
-# Configuración del gráfico
+
 plt.title('Top 8 Categorías por Score Total\n(20% Rating, 30% Reviews, 30% Instalaciones, 20% Ingresos)', fontsize=14, weight='bold')
 plt.xticks(rotation=45, ha='right', fontsize=12)
 plt.ylabel('Score Total (0-100)', fontsize=12)
 plt.yticks(fontsize=10)
-plt.ylim(0, max(scores) + 10)  # Ajustar el eje Y para mayor claridad
+plt.ylim(0, max(scores) + 10)  
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 
 plt.show()
 
-# ---- #
 
-limites_precios = defaultdict(int)  # Diccionario para acumulación
-limites = [0, 1, 2, 3, 4, 5, 6, 10]  # Definir umbrales de precios
+
+limites_precios = defaultdict(int)  
+limites = [0, 1, 2, 3, 4, 5, 6, 10]  
 
 with open('Play_Store_Data.csv', 'r', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        if row['Type'] == 'Paid':  # Solo considerar apps pagas
+        if row['Type'] == 'Paid':  
             try:
                 price = float(row['Price'].replace('$', '')) if row['Price'].startswith('$') else 0
                 installs = int(row['Installs'].replace(',', '').replace('+', '')) if row['Installs'] else 0
             except ValueError:
                 continue
 
-            # Determinar el umbral de precio correspondiente
+
             for i in range(len(limites) - 1):
                 if limites[i] <= price < limites[i + 1]:
                     limites_precios[f"${limites[i]}-${limites[i + 1]}"] += installs
                     break
             else:
-                if price >= limites[-1]:  # Mayor que el último umbral
+                if price >= limites[-1]:  
                     limites_precios[f"${limites[-1]}+"] += installs
 
 limites_ordenados = sorted(limites_precios.items(), key=lambda x: float(x[0].split('-')[0][1:].replace('+', '')))
@@ -553,18 +553,18 @@ instalaciones_acumuladas = [sum(instalaciones_acumuladas[:i+1]) for i in range(l
 plt.figure(figsize=(10, 6))
 plt.bar(labels, instalaciones_acumuladas, color='skyblue', edgecolor='black')
 
-# Etiquetas y título
+
 plt.title('Instalaciones Cumulativas por Umbral de Precio', fontsize=14, weight='bold')
 plt.xlabel('Umbrales de Precio', fontsize=12)
 plt.ylabel('Instalaciones Cumulativas', fontsize=12)
 plt.xticks(rotation=45, ha='right', fontsize=10)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 
-# Mostrar el gráfico
+
 plt.tight_layout()
 plt.show()
 
-# ------ #
+
 
 versiones_android = defaultdict(int)
 
